@@ -1,4 +1,7 @@
 \documentclass[12pt]{report}
+\setlength{\parindent}{0em}
+\setlength{\parskip}{1em}
+
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
 \graphicspath{ {Figures/} }
@@ -26,16 +29,16 @@
 \newpage
 \input{Preamble/declaration.tex}
 
-\tableofcontents
+\tableofcontents.
 \listoffigures
 
 \chapter{Introduction}
 \input{Chapters/introduction.tex}
 
 \chapter{Literature Review}
-\input{Chapters/literature_review.tex}
+\input{Chapters/literature_review_2.tex}
 
-\chapter{Background Theory}
+\chapter{Background Theory} \label{backTheory}
 \input{Chapters/background_theory.tex}
 
 \chapter{Results}
@@ -55,6 +58,5 @@
 \input{Chapters/appendix.tex}
 
 \printbibliography
-
 
 \end{document}
