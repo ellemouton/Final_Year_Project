@@ -12,12 +12,13 @@ os.environ["GRPC_SSL_CIPHER_SUITES"] = 'HIGH+ECDSA'
 # ~/Library/Application Support/Lnd/tls.cert on Mac
 cert = open(os.path.expanduser('~/.lnd/tls.cert'), 'rb').read()
 creds = grpc.ssl_channel_credentials(cert)
-channel = grpc.secure_channel('localhost:10002', creds)
+channel = grpc.secure_channel('localhost:10001', creds)
 stub = lnrpc.LightningStub(channel)
 
+pay = input("Pay an invoice? (y/n)")
 
-response = stub.WalletBalance(ln.WalletBalanceRequest()) #ln.WalletBalanceRequest() is an empty message
-print(response.total_balance)
+if(pay=='y'):
+    invoice = input("Enter payement_request: ")
 
-
+    response = stub.SendPaymentSync(ln.SendRequest(payment_request=invoice))
 

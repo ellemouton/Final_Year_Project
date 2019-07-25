@@ -15,8 +15,14 @@ creds = grpc.ssl_channel_credentials(cert)
 channel = grpc.secure_channel('localhost:10002', creds)
 stub = lnrpc.LightningStub(channel)
 
+invoice_states = ["OPEN", "SETTLED", "CANCELED", "ACCEPTED"]
 
 request = ln.InvoiceSubscription()
 
 for invoice in stub.SubscribeInvoices(request):
-    print(invoice)
+    print("---------Latest------------")
+    print("Memo: "+str(invoice.memo))
+    print("Value: "+str(invoice.value))
+    print("Payment_request: "+str(invoice.payment_request))
+    print("STATE: "+invoice_states[invoice.state])
+
