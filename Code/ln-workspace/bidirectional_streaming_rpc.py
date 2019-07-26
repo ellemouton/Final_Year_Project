@@ -17,24 +17,35 @@ creds = grpc.ssl_channel_credentials(cert)
 channel = grpc.secure_channel('localhost:10001', creds)
 stub = lnrpc.LightningStub(channel)
 
+global content
 
-def request_generator(dest, amt):
-    counter=0
+def readFile():
+    global content
+    file = open('interface.txt', 'r+')
+    content = file.read()
+
+    if len(content)>0:
+        file.truncate(0)
+        file.close()
+        return True
+    return False
+
+def request_generator():
+    global content
+
     print("Starting up")
+
     while True:
-        request = ln.SendRequest(
-                dest = dest,
-                amt = amt,
-        )
-        yield request
-        counter+=1
-        sleep(2)
+
+        if readFile():
+            request = ln.SendRequest(payment_request=content)
+            yield request
 
 
-dest_hex = '034dc220edc18a110ae3165617d56ae8cc886f41dd167f45caffcbd1e3c066a258'
-dest_bytes = codecs.decode(dest_hex, 'hex')
+#dest_hex = "032dc220edc18a110ae3165617d56ae8cc886f41dd167f45caffcbd1e3c066a258"
+#dest_bytes = codecs.decode(dest_hex, 'hex')
 
-request_iterable = request_generator(dest=dest_bytes, amt=100)
+request_iterable = request_generator()
 
 for payment in stub.SendPayment(request_iterable):
-        print(payment)
+    print("Paid:  "+str(payment.payment_hash))

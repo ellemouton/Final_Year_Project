@@ -15,21 +15,18 @@ creds = grpc.ssl_channel_credentials(cert)
 channel = grpc.secure_channel('localhost:10002', creds)
 stub = lnrpc.LightningStub(channel)
 
-invoice_states = ["OPEN", "SETTLED", "CANCELED", "ACCEPTED"]
 
-request = ln.InvoiceSubscription()
 
-total = 0
-print("Total Satoshis Received: "+str(total))
+create = input("Create new invoice? (y/n) ")
 
-for invoice in stub.SubscribeInvoices(request):
-    print("---------Latest------------")
-    print("Memo: "+str(invoice.memo))
-    print("Value: "+str(invoice.value))
-    print("Payment_request: "+str(invoice.payment_request))
-    print("STATE: "+invoice_states[invoice.state])
-    print("---------------------------")
+if(create=='y'):
+    amount = int(input("Amount in satoshis: "))
+    memo = input("Memo for this invoice: ")
 
-    if(invoice.state==1):
-        total += invoice.value
-        print("Total Satoshis Recieved: "+str(total))
+    print("---------------generating new invoice--------------")
+
+    response = stub.AddInvoice(ln.Invoice(value=amount, memo=memo))
+
+    print("Payment Request: "+str(response.payment_request))
+
+    print("---------------------------------------------------")

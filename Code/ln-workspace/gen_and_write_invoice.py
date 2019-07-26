@@ -2,6 +2,7 @@ import rpc_pb2 as ln
 import rpc_pb2_grpc as lnrpc
 import grpc
 import os
+from time import sleep
 
 # Due to updated ECDSA generated tls.cert we need to let gprc know that
 # we need to use that cipher suite otherwise there will be a handhsake
@@ -15,21 +16,29 @@ creds = grpc.ssl_channel_credentials(cert)
 channel = grpc.secure_channel('localhost:10002', creds)
 stub = lnrpc.LightningStub(channel)
 
-invoice_states = ["OPEN", "SETTLED", "CANCELED", "ACCEPTED"]
 
-request = ln.InvoiceSubscription()
+count = 1
+create = input("Start? (y/n) ")
 
-total = 0
-print("Total Satoshis Received: "+str(total))
+if(create=='y'):
+    while True:
+        #amount = int(input("Amount in satoshis: "))
 
-for invoice in stub.SubscribeInvoices(request):
-    print("---------Latest------------")
-    print("Memo: "+str(invoice.memo))
-    print("Value: "+str(invoice.value))
-    print("Payment_request: "+str(invoice.payment_request))
-    print("STATE: "+invoice_states[invoice.state])
-    print("---------------------------")
+        amount = count
+        memo = "Payment number: "+str(count)
 
-    if(invoice.state==1):
-        total += invoice.value
-        print("Total Satoshis Recieved: "+str(total))
+        print("---------------generating new invoice--------------")
+
+        print("Amount:(sat) "+str(count))
+
+        response = stub.AddInvoice(ln.Invoice(value=amount, memo=memo))
+
+        f = open('interface.txt','w')
+        f.write(response.payment_request)
+        f.close()
+        count+=1
+        sleep(1)
+        print("---------------------------------------------------")
+
+
+

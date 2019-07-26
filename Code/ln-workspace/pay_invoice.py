@@ -15,10 +15,22 @@ creds = grpc.ssl_channel_credentials(cert)
 channel = grpc.secure_channel('localhost:10001', creds)
 stub = lnrpc.LightningStub(channel)
 
-pay = input("Pay an invoice? (y/n)")
+pay = input("Pay an invoice? (y/n): ")
 
 if(pay=='y'):
-    invoice = input("Enter payement_request: ")
+    pay_req = input("Enter payement_request: ")
 
-    response = stub.SendPaymentSync(ln.SendRequest(payment_request=invoice))
+    decode_invoice = stub.DecodePayReq(ln.PayReqString(pay_req=pay_req))
+
+    print("-------Confirm the following details---------")
+
+    print("Destination: "+str(decode_invoice.destination))
+    print("Amount (in sat): "+str(decode_invoice.num_satoshis))
+    print("Description: "+str(decode_invoice.description))
+
+
+    print("---------------------------------------------")
+
+    if(input("Pay? (y/n): ")=="y"):
+        response = stub.SendPaymentSync(ln.SendRequest(payment_request=pay_req))
 
