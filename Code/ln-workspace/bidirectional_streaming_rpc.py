@@ -23,7 +23,6 @@ def readFile():
     global content
     file = open('interface.txt', 'r+')
     content = file.read()
-
     if len(content)>0:
         file.truncate(0)
         file.close()
@@ -39,13 +38,15 @@ def request_generator():
 
         if readFile():
             request = ln.SendRequest(payment_request=content)
+
+            print("--------New Payment Details---------")
+            pay_req = stub.DecodePayReq(ln.PayReqString(pay_req = content))
+            print("Memo: "+str(pay_req.description))
+            print("Amount: "+ str(pay_req.num_satoshis))
             yield request
 
-
-#dest_hex = "032dc220edc18a110ae3165617d56ae8cc886f41dd167f45caffcbd1e3c066a258"
-#dest_bytes = codecs.decode(dest_hex, 'hex')
 
 request_iterable = request_generator()
 
 for payment in stub.SendPayment(request_iterable):
-    print("Paid:  "+str(payment.payment_hash))
+    print("Payment Error: '"+payment.payment_error+"'")
