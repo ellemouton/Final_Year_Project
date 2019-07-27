@@ -76,6 +76,8 @@ def main():
     intervals = float(input("Enter charging intervals: "))
     print("Once you start, use 'u' and 'd' to increase and decrease the flow and 'q' to stop the session")
     input("Press Enter to start using the resource")
+    amount_received = 0
+    num_payments = 0
 
     flow_level = 0
     loop = True
@@ -85,10 +87,21 @@ def main():
 
 
     while loop:
-        print("--------------------------------------")
+        os.system('clear')
+        print("----------------------------------------------------")
+        print("Total Satoshi's Received: "+str(amount_received))
+        print("----------------------------------------------------")
+        print("Num payments received: "+str(num_payments))
+        print("Tap status: "+str(flow_level)+"/"+str(max_level))
+        print("Payments generated every: "+str(intervals)+"s")
+        print("'u' to increase flow")
+        print("'d' to decrease flow")
+        print("----------------------------------------------------")
+
         if(flow_level==0):
             print("Tap is closed. No charge")
         else:
+
             print("generating invoice for flow level of: "+str(flow_level))
             pay_req = generate_invoice()
             print("...Waiting for payment...")
@@ -97,15 +110,14 @@ def main():
             while (check_for_payment(pay_req)==False):
                 count += 1
 
-            print(count)
+            num_payments += 1
+            amount_received += flow_level
+
             print("Got Payment!")
-        print("--------------------------------------")
 
         sleep(intervals)
 
-
     poller.join()
-    print("----------------------------------------------")
 
 
 if __name__ == "__main__":

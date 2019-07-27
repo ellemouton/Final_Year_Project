@@ -32,17 +32,26 @@ def readFile():
 def request_generator():
     global content
 
+    total_sent = 0
+
     print("Starting up")
 
     while True:
 
         if readFile():
+            os.system('clear')
+            print("--------------------------------------")
+            print("Total Satoshi's Sent: "+str(total_sent))
+            print("--------------------------------------")
+
             request = ln.SendRequest(payment_request=content)
 
             print("--------New Payment Details---------")
             pay_req = stub.DecodePayReq(ln.PayReqString(pay_req = content))
             print("Memo: "+str(pay_req.description))
             print("Amount: "+ str(pay_req.num_satoshis))
+            total_sent +=pay_req.num_satoshis
+
             yield request
 
 
