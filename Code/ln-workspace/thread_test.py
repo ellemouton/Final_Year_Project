@@ -6,6 +6,7 @@ import grpc
 import os
 from time import sleep
 import codecs
+import time
 
 # Due to updated ECDSA generated tls.cert we need to let gprc know that
 # we need to use that cipher suite otherwise there will be a handhsake
@@ -85,6 +86,7 @@ def main():
     poller = threading.Thread(target=keyboard_poller)
     poller.start()
 
+    wait_times = []
 
     while loop:
         os.system('clear')
@@ -103,6 +105,7 @@ def main():
         else:
 
             print("generating invoice for flow level of: "+str(flow_level))
+            start = time.time()
             pay_req = generate_invoice()
             print("...Waiting for payment...")
 
@@ -112,13 +115,14 @@ def main():
 
             num_payments += 1
             amount_received += flow_level
-
+            elapsed_time = time.time()-start
+            wait_times.append(elapsed_time)
             print("Got Payment!")
 
         sleep(intervals)
 
     poller.join()
-
+    print(wait_times)
 
 if __name__ == "__main__":
     print("Started..")

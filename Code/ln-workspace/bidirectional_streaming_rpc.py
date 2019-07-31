@@ -21,6 +21,7 @@ global content
 
 def readFile():
     global content
+
     file = open('interface.txt', 'r+')
     content = file.read()
     if len(content)>0:
