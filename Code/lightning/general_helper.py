@@ -99,14 +99,62 @@ def listen_for_channel_request(peer):
 
   new_channel = Channel(peer, request['remote_amt'], request['local_amt'])
   return new_channel
-  
+
+def find_cheapest_route(routes):
+  costs = []
+
+  for i in range(len(routes)):
+    cost = 0
+    for n in routes[i]:
+      cost += n[1]
+    costs.append(cost)
+  return costs.index(min(costs))
+
+def route_cost(route):
+  cost = 0
+  for n in route:
+      cost += n[1]
+  return cost
+
+def get_peer(peers, btc_addr):
+  for p in peers:
+    if(p.btc_addr == str.encode(btc_addr)):
+      return p
+  return None
+
+def route_to_string(route):
+  path = []
+  for r in route:
+    path.append(r[0])
+  return ", ".join(path)
+
+def get_channel(peer, channels):
+  for c in channels:
+    if(peer == c.peer):
+      return c
+  return None
+
+def get_price(btc_addr):
+  prices = json.load(open("peer_prices.txt"))
+  return prices[btc_addr]
+
+def get_total_channel_balance(channels):
+  local_balance = 0
+
+  for c in channels:
+    local_balance += c.local_amt
+    
+  return local_balance
+
 
 def xor(var, key):
-    key = key[:len(var)]
-    int_var = int.from_bytes(var, sys.byteorder)
-    int_key = int.from_bytes(key, sys.byteorder)
-    int_enc = int_var ^ int_key
-    return int_enc.to_bytes(len(var), sys.byteorder)
+  while(len(key)<len(var)):
+    key += key
+  key = key[:len(var)]
+  int_var = int.from_bytes(var, sys.byteorder)
+  int_key = int.from_bytes(key, sys.byteorder)
+  int_enc = int_var ^ int_key
+  return int_enc.to_bytes(len(var), sys.byteorder)
 
 def encrypt(message, key):
   return xor(message, key)
