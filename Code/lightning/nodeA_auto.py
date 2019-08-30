@@ -12,10 +12,20 @@ global peers
 peers = []
 channels = []
 
-
-#create BTC address. secret -> private key -> public key
+'''
+create BTC address. secret -> private key -> public key
+'''
 node = BTC_node(b'nodeA')
 print("Node Bitcoin Address: "+str(node.address))
+
+'''
+Get A's wallet transaction
+'''
+input_tx_id_1 = 'd4f37353c4412c97aca0421958dfbfeffc2e0759dea5e66042b878d113c9d6bc'
+input_tx_index_1 = 1
+
+input_tx_id_2 = '15fccae87a15395af0232ba7e1a5659a6d3ca67c90ebdf900025753fb6a57f3e'
+input_tx_index_2 = 0
 
 '''
 Automatically connect to peers C and B and D
@@ -29,9 +39,10 @@ for p in peers:
 
 '''
 Automatically connect channel with B and D
+channels.append(add_channel(node, peers[0], input_tx_id, input_tx_index))
 '''
-channels.append(add_channel(peers[1], 1000))
-channels.append(add_channel(peers[2], 1000))
+channels.append(add_channel(node, peers[1], input_tx_id_1, input_tx_index_1))
+channels.append(add_channel(node, peers[2], input_tx_id_1, input_tx_index_1))
 
 for c in channels:
   print(c)
@@ -40,7 +51,7 @@ print("----Send Mode----")
 
 # destination (C's address (or rather, the Gateways BTC address))
 destination = 'n1weDdde5xXLfPeutESLaG8swr5jLCqz72'
-
+'''
 while True:
   
   # find routes
@@ -84,7 +95,7 @@ while True:
     print("Total Balance: "+str(get_total_channel_balance(channels)))
 
 
-
+'''
 
 
 

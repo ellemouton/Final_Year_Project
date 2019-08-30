@@ -20,6 +20,12 @@ node = BTC_node(b'nodeD')
 print("Node Bitcoin Address: "+str(node.address))
 
 '''
+Get D's wallet transaction
+'''
+input_tx_id = 'e49a74f9b24d75b8e168b90b0d3eb930d11b3a387a2380343f159431bbb43d62'
+input_tx_index = 0
+
+'''
 advertise price
 '''
 prices = json.load(open("peer_prices.txt"))
@@ -44,7 +50,7 @@ for p in peers:
 '''
 Automatically connect channel with C
 '''
-channels.append(add_channel(peers[0], 1000))
+channels.append(add_channel(node, peers[0], input_tx_id, input_tx_index))
 
 '''
 Automatically listen for channels from A
@@ -57,7 +63,7 @@ for c in channels:
 
 
 print("----Route Mode----")
-
+'''
 while True:
   prev_hop = get_peer(peers, 'mst8broiaX4PFMFNbjfrBnMSnrVF42Jgd7')
   sym_key_1 = node.secret*prev_hop.public_key
@@ -104,7 +110,7 @@ while True:
       print(c)
 
     print("Total Balance: "+str(get_total_channel_balance(channels)))
-
+'''
 
 
 

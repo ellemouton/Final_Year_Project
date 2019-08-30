@@ -4,6 +4,9 @@ from helper import hash256, little_endian_to_int
 from socket_helper import SocketError, SocketServer, SocketClient
 from ecc import S256Point
 import sys
+from tx import Tx, TxIn, TxOut
+from io import BytesIO
+from script import Script, p2pkh_script
 
 class BTC_node:
   def __init__(self, passphrase):
@@ -28,10 +31,11 @@ class Peer:
     return str(self.socket)+", peer btc address: "+str(self.btc_addr)
 
 class Channel:
-  def __init__(self, peer, local_amt, remote_amt):
+  def __init__(self, peer, local_amt, remote_amt, funding_tx):
     self.peer = peer
     self.local_amt = local_amt
     self.remote_amt = remote_amt
+    self.funding_tx = funding_tx
 
   def pay(self, amt):
     self.local_amt -=amt
@@ -49,6 +53,7 @@ class Channel:
     data['addr'] = self.peer.btc_addr.decode()
     data['local_amt'] = self.local_amt
     data['remote_amt'] = self.remote_amt
+    data['funding_tx'] = self.funding_tx.serialize().hex()
     return json.dumps(data)
 
 def create_btc_address(passphrase):
@@ -85,20 +90,38 @@ def connect_peer(host, port, node):
 
   return Peer(sock, peer_address, peer_pub_key_point)
 
-def add_channel(peer, local_amt, remote_amt=0):
+def add_channel(local_node, remote_peer, input_tx_id, input_tx_index):
+
+  tx_in = TxIn(bytes.fromhex(input_tx_id), input_tx_index)
+  local_amount = tx_in.value()
+  remote_amount = 0
+
+  # Construct the output: amount, scriptPubKey = 2-of-2 Bare Multisig  = Script([op_1, pubkey1, pubkey2, op_2, op_checkmultisig])
+  scriptPubKey = Script([0x52, local_node.public_key.sec(), remote_peer.public_key.sec(), 0x52, 0xae])
+  tx_out = TxOut(amount = local_amount, script_pubkey = scriptPubKey)
+
+  # Construct the transaction object
+  funding_tx = Tx(1, [tx_in], [tx_out], 0, True)
+
+  # Sign the input
+  funding_tx.sign_input(0, local_node.private_key)
 
   #send channel request
-  new_channel = Channel(peer, local_amt, remote_amt)
-  peer.send(str.encode(new_channel.toJSON()))
+  new_channel = Channel(remote_peer, local_amount, remote_amount, funding_tx)
+  remote_peer.send(str.encode(new_channel.toJSON()))
 
   return new_channel
 
 def listen_for_channel_request(peer):
 
   request = json.loads(peer.receive())
-
-  new_channel = Channel(peer, request['remote_amt'], request['local_amt'])
-  return new_channel
+  funding_tx = Tx.parse(BytesIO(bytes.fromhex(request['funding_tx'])))
+  if(funding_tx.verify()):
+    new_channel = Channel(peer, request['remote_amt'], request['local_amt'], funding_tx)
+    return new_channel
+  else:
+    print("Invalid Channel Request")
+    return None
 
 def find_cheapest_route(routes):
   costs = []
