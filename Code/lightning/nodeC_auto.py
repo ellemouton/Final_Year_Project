@@ -110,12 +110,12 @@ for c in channels:
 
 
 print("----Receive Mode----")
-'''
+
 sockB = threading.Thread(target=sockB_checker)
 sockB.start()
 
 sockD = threading.Thread(target=sockD_checker)
 sockD.start()
-'''
+
 
 

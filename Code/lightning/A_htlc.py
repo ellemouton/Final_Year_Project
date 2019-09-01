@@ -2,7 +2,7 @@ from socket_helper import SocketError, SocketClient
 from general_helper import *
 from time import sleep
 from ecc import S256Point
-from helper import sha256
+from helper import sha256, decode_base58, SIGHASH_ALL, int_to_little_endian, encode_varint, hash160
 import secrets
 import json
 
@@ -39,7 +39,6 @@ for p in peers:
 
 '''
 Automatically connect channel with B and D
-channels.append(add_channel(node, peers[0], input_tx_id, input_tx_index))
 '''
 channels.append(add_channel(node, peers[1], input_tx_id_1, input_tx_index_1))
 channels.append(add_channel(node, peers[2], input_tx_id_2, input_tx_index_2))
@@ -47,10 +46,12 @@ channels.append(add_channel(node, peers[2], input_tx_id_2, input_tx_index_2))
 for c in channels:
   print(c)
 
+
 print("----Send Mode----")
 
 # destination (C's address (or rather, the Gateways BTC address))
 destination = 'n1weDdde5xXLfPeutESLaG8swr5jLCqz72'
+sym_key_dest = node.secret*get_peer(peers, destination).public_key
 
 while True:
   
@@ -61,40 +62,48 @@ while True:
   # Find cost of each route and choose cheapest
   cheap_route_index = find_cheapest_route(routes)
   cheapest_route = routes[cheap_route_index]
-  print(cheapest_route)
   cost = route_cost(cheapest_route)
+
+  print(cheapest_route)
   
+  # get next hop from route and hence get relevent channel
+  next_hop = get_peer(peers, routes[cheap_route_index][0][0])
+  next_hop_channel = get_channel(next_hop, channels)
+
   #body: secret and actual message -> encrypt for destination 
   secret = secrets.token_urlsafe(16)
+  secret_hash = sha256(str.encode(secret))
   message = secrets.token_urlsafe(64)
   body = {"secret":secret, "message":message}
-  sym_key_2 = node.secret*get_peer(peers, destination).public_key
-  encrypted_body = encrypt(str.encode(json.dumps(body)), sym_key_2.sec())
+  encrypted_body = encrypt(str.encode(json.dumps(body)), sym_key_dest.sec())
 
-  #header: source, route, secret hash -> encrypt for next hop
-  header = {"source":node.address, "route": cheapest_route, "secret_hash": str(sha256(str.encode(secret)))}
-  sym_key_1 = node.secret*get_peer(peers, cheapest_route[0][0]).public_key
-  encrypted_header = encrypt(str.encode(json.dumps(header)), sym_key_1.sec())
+  commitment_tx = new_commitment_tx(node, next_hop_channel, cost, secret_hash)
 
-  #send to next hop and wait for secret to be revealed
-  next_hop = get_peer(peers, header['route'][0][0])
+  # header: source, route, secret hash -> encrypt for next hop
+  header = {"source":node.address, "route": cheapest_route, "commitment_tx": str(commitment_tx.serialize().hex())}
+  sym_key_next_hop = node.secret*get_peer(peers, cheapest_route[0][0]).public_key
+  encrypted_header = encrypt(str.encode(json.dumps(header)), sym_key_next_hop.sec())
 
-  #send header
+  # send header
   next_hop.send(encrypted_header)
 
+  # send body if header is accepted
   if(next_hop.receive()==b'header ACK'):
     next_hop.send(encrypted_body)
   
-  revealed_secret = next_hop.receive()
+  reply = json.loads(next_hop.receive().decode())
+  commitment_tx = Tx.parse(BytesIO(bytes.fromhex(reply['commitment_tx'])))
+  revealed_secret = reply['secret']
   
-  if(revealed_secret == str.encode(secret)):
+  if(revealed_secret == secret):
     print("Successful delivery of message proven. Thus update channel state")
-    get_channel(next_hop, channels).pay(cost)
+
+    next_hop_channel.pay(commitment_tx.tx_outs[2].amount)
+
     print(get_channel(next_hop, channels))
 
     print("Total Balance: "+str(get_total_channel_balance(channels)))
-
-
+  
 
 
 

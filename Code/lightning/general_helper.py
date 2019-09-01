@@ -1,6 +1,6 @@
 import json
 from ecc import PrivateKey
-from helper import hash256, little_endian_to_int
+from helper import hash256, little_endian_to_int, sha256, decode_base58, SIGHASH_ALL, int_to_little_endian, encode_varint, hash160
 from socket_helper import SocketError, SocketServer, SocketClient
 from ecc import S256Point
 import sys
@@ -169,6 +169,34 @@ def get_total_channel_balance(channels):
     
   return local_balance
 
+def new_commitment_tx(node, current_channel, cost, secret_hash):
+
+  remote_peer = current_channel.peer
+
+  # Create input using the output from the funding tx
+  tx_in = TxIn(bytes.fromhex(current_channel.funding_tx.id()), 0)
+
+  # Create 3 outputs. 1 to nodeA and 1 to nodeB and 1 to an HTLC script
+  script_1 = p2pkh_script(decode_base58(node.address))
+  tx_out_1 = TxOut(amount = current_channel.local_amt - cost, script_pubkey = script_1)
+
+  script_2 = p2pkh_script(decode_base58(remote_peer.btc_addr.decode()))
+  tx_out_2 = TxOut(amount = current_channel.remote_amt, script_pubkey = script_2)
+
+  #script_3 HTLC
+  script_3 = Script([99,168, secret_hash, 136, 118, 169, hash160(remote_peer.public_key.sec()), 103, encode_varint(1000), 177, 117, 118, 169, hash160(node.public_key.sec()), 104, 136, 172])
+  tx_out_3 = TxOut(amount = cost, script_pubkey = script_3)
+
+  # Construct the commitment tx object
+  commitment_tx = Tx(1, [tx_in], [tx_out_1, tx_out_2, tx_out_3], 0, True)
+
+  #sign it
+  z = commitment_tx.sig_hash(0)
+  signature = node.private_key.sign(z).der() + SIGHASH_ALL.to_bytes(1, 'big')
+  script_sig = Script([0x0, signature])
+  commitment_tx.tx_ins[0].script_sig = script_sig
+
+  return commitment_tx
 
 def xor(var, key):
   while(len(key)<len(var)):

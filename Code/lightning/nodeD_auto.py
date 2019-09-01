@@ -63,7 +63,7 @@ for c in channels:
 
 
 print("----Route Mode----")
-'''
+
 while True:
   prev_hop = get_peer(peers, 'mst8broiaX4PFMFNbjfrBnMSnrVF42Jgd7')
   sym_key_1 = node.secret*prev_hop.public_key
@@ -110,7 +110,7 @@ while True:
       print(c)
 
     print("Total Balance: "+str(get_total_channel_balance(channels)))
-'''
+
 
 
 
