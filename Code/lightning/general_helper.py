@@ -133,10 +133,10 @@ def find_cheapest_route(routes):
     costs.append(cost)
   return costs.index(min(costs))
 
-def route_cost(route):
+def route_cost(route, packet_size):
   cost = 0
   for n in route:
-      cost += n[1]
+      cost += n[1]*packet_size
   return cost
 
 def get_peer(peers, btc_addr):

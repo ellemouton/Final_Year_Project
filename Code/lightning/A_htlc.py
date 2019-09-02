@@ -9,6 +9,9 @@ import json
 global peers
 
 
+def get_packet_size():
+  return int(json.load(open("packet_size.txt"))['size'])
+
 peers = []
 channels = []
 
@@ -62,9 +65,7 @@ while True:
   # Find cost of each route and choose cheapest
   cheap_route_index = find_cheapest_route(routes)
   cheapest_route = routes[cheap_route_index]
-  cost = route_cost(cheapest_route)
-
-  print(cheapest_route)
+  
   
   # get next hop from route and hence get relevent channel
   next_hop = get_peer(peers, routes[cheap_route_index][0][0])
@@ -73,9 +74,10 @@ while True:
   #body: secret and actual message -> encrypt for destination 
   secret = secrets.token_urlsafe(16)
   secret_hash = sha256(str.encode(secret))
-  message = secrets.token_urlsafe(64)
+  message = secrets.token_urlsafe(get_packet_size())
   body = {"secret":secret, "message":message}
   encrypted_body = encrypt(str.encode(json.dumps(body)), sym_key_dest.sec())
+  cost = route_cost(cheapest_route, len(encrypted_body))
 
   commitment_tx = new_commitment_tx(node, next_hop_channel, cost, secret_hash)
 

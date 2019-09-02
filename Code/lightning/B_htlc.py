@@ -39,8 +39,6 @@ def check_htlc_and_get_secret_hash(commitment_tx, channel):
     return None  
 
 
-
-
 # create BTC address. secret -> private key -> public key
 node = BTC_node(b'nodeB')
 print("Node Bitcoin Address: "+str(node.address))
@@ -95,12 +93,13 @@ while True:
     #get header info
     commitment_tx_prev_hop = Tx.parse(BytesIO(bytes.fromhex(decrypted_header['commitment_tx'])))
     secret_hash = check_htlc_and_get_secret_hash(commitment_tx_prev_hop, prev_hop_channel)
-    cost_paid = route_cost(decrypted_header['route'])
+    print(len(encrypted_body))
+    cost_paid = route_cost(decrypted_header['route'], len(encrypted_body))
 
     #adapt header and encrypt for next hop
     header = decrypted_header
     header['route'] = decrypted_header['route'][1:]
-    cost_to_pay = route_cost(header['route'])
+    cost_to_pay = route_cost(header['route'], len(encrypted_body))
 
     next_hop = get_peer(peers, header['route'][0][0])
     next_hop_channel = get_channel(next_hop, channels)
