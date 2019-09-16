@@ -35,30 +35,50 @@ global host_D
 peers = []
 channels = []
 packet_size_main = 0
+current_packet_multiple = 7
+total_bytes_sent_main = 0
+total_sat_paid_main = 0
 prices = {"n1weDdde5xXLfPeutESLaG8swr5jLCqz72": 0, "mfwnjj1Jbd1uwXbj5Q4FUjmkEcGqQQsYDn": 0, "mmqrZXdvAi8mcjvXGJX2eJdA37kWXmCWjW": 0}
 
 
 ''' GUI '''
+def swap_packet_size_multiple():
+  global current_packet_multiple
 
+  if(current_packet_multiple==7):
+    current_packet_multiple = 8
+  else:
+    current_packet_multiple = 7
 
 def increase():
     global packet_size
     global packet_size_main
+    global current_packet_multiple
     
-    packet_size_main = packet_size.get()+10
-    packet_size.set(packet_size_main)
+    packet_size_main += current_packet_multiple
+
+    swap_packet_size_multiple()
+
+    packet_size.set(packet_size.get()+10)
 
     
 def decrease():
     global packet_size
     global packet_size_main
+    global current_packet_multiple
 
-    packet_size_main = packet_size.get()-10
+    swap_packet_size_multiple()
+
+    packet_size_main -= current_packet_multiple
+    
+
+    val = packet_size.get()-10
+
     if(packet_size_main <= 0):
         packet_size_main = 0
-        packet_size.set(packet_size_main)
+        packet_size.set(0)
     else:
-        packet_size.set(packet_size_main)
+        packet_size.set(val)
  
 # Create the main window
 root = tk.Tk()
@@ -82,11 +102,15 @@ packet_size = tk.IntVar()
 totalBalance = tk.IntVar()
 channel_B_local = tk.IntVar()
 channel_D_local = tk.IntVar()
+total_bytes_sent = tk.IntVar()
+total_sat_paid = tk.IntVar()
 
 totalBalance.set(0)
 channel_B_local.set(0)
 channel_D_local.set(0)
 packet_size.set(0)
+total_bytes_sent.set(0)
+total_sat_paid.set(0)
 
 #packet_size = 0
 # Create widgets
@@ -101,7 +125,10 @@ label_chan_B_label = tk.Label(frame, textvariable = channel_B_local, bg=bg_colou
 label_chan_D_balance = tk.Label(frame, text="Channel A-D Local Balance:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_chan_D_label = tk.Label(frame, textvariable = channel_D_local, bg=bg_colour)
 label_status = tk.Label(frame, text="Node A: Sending Data", font=('Helvetica', 15, 'bold'), bg=bg_colour)
-
+label_bytes_sent_label = tk.Label(frame, text="Total bytes send:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_bytes_sent = tk.Label(frame, textvariable = total_bytes_sent, bg=bg_colour)
+label_sat_paid_label = tk.Label(frame, text="Total sat paid:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_sat_paid = tk.Label(frame, textvariable = total_sat_paid, bg=bg_colour)
 
 # Lay out widgets
 label_size.grid(row=2, column=3, padx=5, pady=5)
@@ -114,7 +141,11 @@ label_chan_B_balance.grid(row=2, column=0, padx=5, pady=5)
 label_chan_B_label.grid(row=2, column=1, padx=5, pady=5)
 label_chan_D_balance.grid(row=3, column=0, padx=5, pady=5)
 label_chan_D_label.grid(row=3, column=1, padx=5, pady=5)
-label_status.grid(row=0, column=1, columnspan=3, padx=5, pady=5)
+label_status.grid(row=0, column=0, columnspan=3, padx=5, pady=5)
+label_bytes_sent_label.grid(row=4, column=3, padx=5, pady=5)
+label_bytes_sent.grid(row=4, column=4, padx=5, pady=5)
+label_sat_paid_label.grid(row=5, column=3, padx=5, pady=5)
+label_sat_paid.grid(row=5, column=4, padx=5, pady=5)
 
 
 #create BTC address. secret -> private key -> public key
@@ -161,6 +192,8 @@ print("----Send Mode----")
 
 def send_packets():
   global packet_size_main
+  global total_bytes_sent_main
+  global total_sat_paid_main
 
   # destination (C's address (or rather, the Gateways BTC address))
   destination = 'n1weDdde5xXLfPeutESLaG8swr5jLCqz72'
@@ -222,6 +255,12 @@ def send_packets():
         next_hop_channel.pay(commitment_tx.tx_outs[2].amount)
 
         print(get_channel(next_hop, channels))
+
+        total_sat_paid_main += cost
+        total_sat_paid.set(total_sat_paid_main)
+
+        total_bytes_sent_main += len(encrypted_body) 
+        total_bytes_sent.set(total_bytes_sent_main)
 
         wallet_balance = get_total_channel_balance(channels)
         local_balance_AB = get_channel_balance(channels[0])

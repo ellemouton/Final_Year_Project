@@ -47,6 +47,7 @@ GUI
 
 global price_sock
 global price 
+total_bytes_routed_main = 0
 
 def increase():
     global price
@@ -90,11 +91,13 @@ price = tk.IntVar()
 totalBalance = tk.IntVar()
 channel_A_local = tk.IntVar()
 channel_C_local = tk.IntVar()
+total_bytes_routed = tk.IntVar()
 
 price.set(0)
 totalBalance.set(0)
 channel_A_local.set(0)
 channel_C_local.set(0)
+total_bytes_routed.set(0)
 
 # Create widgets
 button_up = tk.Button(frame, text="Up", command=increase)
@@ -108,6 +111,8 @@ label_chan_B_label = tk.Label(frame, textvariable = channel_A_local, bg=bg_colou
 label_chan_D_balance = tk.Label(frame, text="Channel D-C Local Balance:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_chan_D_label = tk.Label(frame, textvariable = channel_C_local, bg=bg_colour)
 label_status = tk.Label(frame, text="Node D: Routing Data", font=('Helvetica', 17, 'bold'), bg=bg_colour)
+label_bytes_routed_label = tk.Label(frame, text="Total bytes routed:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_bytes_routed = tk.Label(frame, textvariable = total_bytes_routed, bg=bg_colour)
 
 
 # Lay out widgets
@@ -121,7 +126,9 @@ label_chan_B_balance.grid(row=2, column=0, padx=5, pady=5)
 label_chan_B_label.grid(row=2, column=1, padx=5, pady=5)
 label_chan_D_balance.grid(row=3, column=0, padx=5, pady=5)
 label_chan_D_label.grid(row=3, column=1, padx=5, pady=5)
-label_status.grid(row=0, column=1, columnspan=3, padx=5, pady=5)
+label_status.grid(row=0, column=0, columnspan=3, padx=5, pady=5)
+label_bytes_routed_label.grid(row=4, column=3, padx=5, pady=5)
+label_bytes_routed.grid(row=4, column=4, padx=5, pady=5)
 
 
 # create BTC address. secret -> private key -> public key
@@ -156,6 +163,7 @@ for c in channels:
 
 
 def routing():
+  global total_bytes_routed_main
 
   print("----Route Mode----")
 
@@ -207,6 +215,8 @@ def routing():
 
       if(next_hop.receive()==b'header ACK'):
           print("routing "+str(len(encrypted_body))+" bytes")
+          total_bytes_routed_main +=len(encrypted_body)
+          total_bytes_routed.set(total_bytes_routed_main)
           next_hop.send(encrypted_body)
 
       reply = json.loads(next_hop.receive().decode())

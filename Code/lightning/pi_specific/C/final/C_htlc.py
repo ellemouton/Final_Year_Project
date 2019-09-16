@@ -28,6 +28,7 @@ import tkinter as tk
       Set up node, peers and channels
 '''
 global host
+total_bytes_received_main = 0
 
 peers = []
 channels = []
@@ -90,11 +91,13 @@ price = tk.IntVar()
 totalBalance = tk.IntVar()
 channel_B_local = tk.IntVar()
 channel_D_local = tk.IntVar()
+total_bytes_received = tk.IntVar()
 
 price.set(0)
 totalBalance.set(0)
 channel_B_local.set(0)
 channel_D_local.set(0)
+total_bytes_received.set(0)
 
 # Create widgets
 button_up = tk.Button(frame, text="Up", command=increase)
@@ -108,6 +111,8 @@ label_chan_B_label = tk.Label(frame, textvariable = channel_B_local, bg=bg_colou
 label_chan_D_balance = tk.Label(frame, text="Channel C-D Local Balance:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_chan_D_label = tk.Label(frame, textvariable = channel_D_local, bg=bg_colour)
 label_status = tk.Label(frame, text="Node C: Receiving Data", font=('Helvetica', 17, 'bold'), bg=bg_colour)
+label_bytes_received_label = tk.Label(frame, text="Total bytes routed:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_bytes_received = tk.Label(frame, textvariable = total_bytes_received, bg=bg_colour)
 
 
 # Lay out widgets
@@ -121,10 +126,13 @@ label_chan_B_balance.grid(row=2, column=0, padx=5, pady=5)
 label_chan_B_label.grid(row=2, column=1, padx=5, pady=5)
 label_chan_D_balance.grid(row=3, column=0, padx=5, pady=5)
 label_chan_D_label.grid(row=3, column=1, padx=5, pady=5)
-label_status.grid(row=0, column=1, columnspan=3, padx=5, pady=5)
-
+label_status.grid(row=0, column=0, columnspan=3, padx=5, pady=5)
+label_bytes_received_label.grid(row=4, column=3, padx=5, pady=5)
+label_bytes_received.grid(row=4, column=4, padx=5, pady=5)
 
 def sock_checker(node_address):
+    global total_bytes_received_main
+
     prev_hop = get_peer(peers, node_address)
     current_channel = get_channel(prev_hop, channels)
     sym_key_prev_hop = prev_hop.sym_key
@@ -162,6 +170,9 @@ def sock_checker(node_address):
 
             current_channel.paid(commitment_tx.tx_outs[2].amount)
             print(current_channel)
+
+            total_bytes_received_main +=len(encrypted_body)
+            total_bytes_received.set(total_bytes_received_main)
 
             wallet_balance = get_total_channel_balance(channels)
             local_balance_CB = get_channel_balance(channels[0])
