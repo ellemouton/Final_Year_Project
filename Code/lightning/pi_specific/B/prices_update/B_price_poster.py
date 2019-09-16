@@ -1,6 +1,6 @@
 from socket_helper import SocketError, SocketServer
 
-def listen_for_new_peer(host, port):
+def listen_for_new_peer_for_price(host, port):
 
   sock = SocketServer(host, port)
   sock.listen()
@@ -11,7 +11,7 @@ def listen_for_new_peer(host, port):
 host = '169.254.10.1'
 port = 5000
 
-sock = listen_for_new_peer(host, port)
+sock = listen_for_new_peer_for_price(host, port)
 
 try:
 	while True:

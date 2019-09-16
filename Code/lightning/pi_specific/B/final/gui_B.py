@@ -14,15 +14,15 @@ def listen_for_new_peer(host, port):
 
 def increase():
     global price
-    global sock
+    #global sock
     
     new_price = price.get()+1
     price.set(new_price)
-    sock.send(new_price.to_bytes(4, 'little'))
+    #sock.send(new_price.to_bytes(4, 'little'))
 
 def decrease():
     global price
-    global sock
+    #global sock
 
     val = price.get()
 
@@ -31,9 +31,9 @@ def decrease():
     else:
         new_price = val-1
         price.set(new_price)
-        sock.send(new_price.to_bytes(4, 'little'))
+        #sock.send(new_price.to_bytes(4, 'little'))
         
-sock = listen_for_new_peer(host, port)
+#sock = listen_for_new_peer(host, port)
 
 # Create the main window
 root = tk.Tk()

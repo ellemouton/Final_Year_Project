@@ -1,43 +1,26 @@
 import tkinter as tk
-from socket_helper import SocketError, SocketServer
 
-host = '169.254.10.1'
-port = 5000
-
-global sock
-global price 
-
-def listen_for_new_peer(host, port):
-    sock  = SocketServer(host, port)
-    sock.listen()
-    return sock
+# Declare global variables
+packet_size = None 
 
 def increase():
-    global price
-    global sock
+    global packet_size
     
-    new_price = price.get()+1
-    price.set(new_price)
-    sock.send(new_price.to_bytes(4, 'little'))
+    packet_size.set(packet_size.get()+10)
+    
 
 def decrease():
-    global price
-    global sock
+    global packet_size
 
-    val = price.get()
-
+    val = packet_size.get()
     if(val ==0):
         pass
     else:
-        new_price = val-1
-        price.set(new_price)
-        sock.send(new_price.to_bytes(4, 'little'))
-        
-sock = listen_for_new_peer(host, port)
-
+        packet_size.set(packet_size.get()-10)
+ 
 # Create the main window
 root = tk.Tk()
-root.title("Node B: Router")
+root.title("Node A: Client")
 
 # Create the main container
 frame = tk.Frame(root)
@@ -52,7 +35,7 @@ frame.rowconfigure(5, weight=1)
 
 
 # Variables for holding temperature data
-price = tk.IntVar()
+packet_size = tk.IntVar()
 totalBalance = tk.IntVar()
 channel_B_local = tk.IntVar()
 channel_D_local = tk.IntVar()
@@ -61,9 +44,10 @@ totalBalance.set(1000)
 channel_B_local.set(2000)
 channel_D_local.set(3000)
 
+#packet_size = 0
 # Create widgets
 button_up = tk.Button(frame, text="Up", command=increase)
-label_size = tk.Label(frame, textvariable = price)
+label_size = tk.Label(frame, textvariable=packet_size)
 label_unit_packet = tk.Label(frame, text="bytes")
 button_down = tk.Button(frame, text="Down", command=decrease)
 label_wallet_balance_label = tk.Label(frame, text="Total Wallet Balance:", font=('Helvetica', 13, 'bold'))

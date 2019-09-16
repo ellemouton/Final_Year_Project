@@ -1,8 +1,8 @@
 import tkinter as tk
 from socket_helper import SocketError, SocketServer
 
-host = '169.254.10.1'
-port = 5000
+host = '169.254.10.10'
+port = 6000
 
 global sock
 global price 
@@ -33,7 +33,10 @@ def decrease():
         price.set(new_price)
         sock.send(new_price.to_bytes(4, 'little'))
         
+
+
 sock = listen_for_new_peer(host, port)
+
 
 # Create the main window
 root = tk.Tk()

@@ -79,6 +79,12 @@ def listen_for_new_peer(host, port, node):
 
   return Peer(sock, peer_address, peer_pub_key_point, peer_sym_key)
 
+def listen_for_new_peer_for_price(host, port):
+
+  sock = SocketServer(host, port)
+  sock.listen()
+  return sock
+
 def connect_peer(host, port, node):
 
   sock = SocketClient(host, port)
@@ -93,6 +99,12 @@ def connect_peer(host, port, node):
   peer_sym_key = node.secret*peer_pub_key_point
 
   return Peer(sock, peer_address, peer_pub_key_point, peer_sym_key)
+
+def connect_peer_for_price(host, port):
+
+  sock = SocketClient(host, port)
+  sock.connect()
+  return sock
 
 def add_channel(local_node, remote_peer, input_tx_id, input_tx_index):
 
@@ -173,6 +185,9 @@ def get_total_channel_balance(channels):
     
   return local_balance
 
+def get_channel_balance(channel):
+  return channel.local_amt
+
 def new_commitment_tx(node, current_channel, cost, secret_hash):
 
   remote_peer = current_channel.peer
@@ -224,6 +239,7 @@ def check_htlc_and_get_secret_hash(node, commitment_tx, channel):
             if(tx_out_2.script_pubkey.cmds[6] == hash160(node.public_key.sec())):
                 return tx_out_2.script_pubkey.cmds[2]
     return None  
+
 
 def xor(var, key):
   while(len(key)<len(var)):

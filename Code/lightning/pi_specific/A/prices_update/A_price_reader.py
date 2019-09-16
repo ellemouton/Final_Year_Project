@@ -41,7 +41,7 @@ def get_D_price():
   finally:
     sock.close()
 
-def connect_peer(host, port):
+ def connect_peer(host, port):
 
   sock = SocketClient(host, port)
   sock.connect()

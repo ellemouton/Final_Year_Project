@@ -76,6 +76,12 @@ def listen_for_new_peer(host, port, node):
   peer_pub_key_point = S256Point.parse(peer_pub_key)
   return Peer(sock, peer_address, peer_pub_key_point)
 
+def listen_for_new_peer_for_price(host, port):
+
+  sock = SocketServer(host, port)
+  sock.listen()
+  return sock
+
 def connect_peer(host, port, node):
 
   sock = SocketClient(host, port)

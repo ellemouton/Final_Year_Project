@@ -16,10 +16,11 @@ class BTC_node:
     self.address = self.public_key.address(testnet=True)
 
 class Peer:
-  def __init__(self, socket, btc_addr, public_key):
+  def __init__(self, socket, btc_addr, public_key, sym_key):
     self.socket = socket
     self.btc_addr = btc_addr
     self.public_key = public_key
+    self.sym_key = sym_key
 
   def send(self,data):
       self.socket.send(data)
@@ -74,7 +75,9 @@ def listen_for_new_peer(host, port, node):
   peer_pub_key = sock.receive()
 
   peer_pub_key_point = S256Point.parse(peer_pub_key)
-  return Peer(sock, peer_address, peer_pub_key_point)
+  peer_sym_key = peer_pub_key_point*node.secret
+
+  return Peer(sock, peer_address, peer_pub_key_point, peer_sym_key)
 
 def connect_peer(host, port, node):
 
@@ -87,8 +90,15 @@ def connect_peer(host, port, node):
   sock.send(node.public_key.sec())
 
   peer_pub_key_point = S256Point.parse(peer_pub_key)
+  peer_sym_key = peer_pub_key_point*node.secret
 
-  return Peer(sock, peer_address, peer_pub_key_point)
+  return Peer(sock, peer_address, peer_pub_key_point, peer_sym_key)
+
+def connect_peer_for_price(host, port):
+
+  sock = SocketClient(host, port)
+  sock.connect()
+  return sock
 
 def add_channel(local_node, remote_peer, input_tx_id, input_tx_index):
 
