@@ -82,8 +82,8 @@ frame.pack(fill=tk.BOTH, expand=True)
 
 # Allow middle cell of grid to grow when window is resized
 frame.columnconfigure(2, weight=1)
-frame.rowconfigure(3, weight=1)
-frame.rowconfigure(5, weight=1)
+#frame.rowconfigure(3, weight=1)
+#frame.rowconfigure(5, weight=1)
 
 
 # Variables for holding temperature data
@@ -103,25 +103,25 @@ total_bytes_received.set(0)
 button_up = tk.Button(frame, text="Up", command=increase)
 label_size = tk.Label(frame, textvariable = price, bg=bg_colour)
 label_unit_packet = tk.Label(frame, text="sat/byte", bg=bg_colour)
-button_down = tk.Button(frame, text="Down", command=decrease, bg=bg_colour)
-label_wallet_balance_label = tk.Label(frame, text="Total Wallet Balance:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+button_down = tk.Button(frame, text="Down", command=decrease)
+label_wallet_balance_label = tk.Label(frame, text="Total Wallet Balance:", font=('Helvetica', 13, 'bold', 'italic'), bg=bg_colour)
 label_wallet_balance = tk.Label(frame, textvariable = totalBalance, bg=bg_colour)
-label_chan_B_balance = tk.Label(frame, text="Channel C-B Local Balance:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_chan_B_balance = tk.Label(frame, text="Channel C-B Local:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_chan_B_label = tk.Label(frame, textvariable = channel_B_local, bg=bg_colour)
-label_chan_D_balance = tk.Label(frame, text="Channel C-D Local Balance:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_chan_D_balance = tk.Label(frame, text="Channel C-D Local:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_chan_D_label = tk.Label(frame, textvariable = channel_D_local, bg=bg_colour)
-label_status = tk.Label(frame, text="Node C: Receiving Data", font=('Helvetica', 17, 'bold'), bg=bg_colour)
+label_status = tk.Label(frame, text="Node C: Gateway", font=('Symbol', 20, 'bold'), bg=bg_colour)
 label_bytes_received_label = tk.Label(frame, text="Total bytes routed:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_bytes_received = tk.Label(frame, textvariable = total_bytes_received, bg=bg_colour)
 
 
 # Lay out widgets
-label_size.grid(row=2, column=3, padx=5, pady=5)
-label_unit_packet.grid(row=2, column=4, padx=5, pady=5)
-button_up.grid(row=1, column=3, columnspan=2, padx=5, pady=5)
-button_down.grid(row=3, column=3, columnspan=2, padx=5, pady=5)
-label_wallet_balance_label.grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
-label_wallet_balance.grid(row=1, column=1, padx=5, pady=5)
+label_size.grid(row=2, column=2, padx=5, columnspan=2, pady=5)
+label_unit_packet.grid(row=2, column=3, padx=5, pady=5, sticky=tk.E)
+button_up.grid(row=1, column=2, columnspan=2, padx=5, pady=5)
+button_down.grid(row=3, column=2, columnspan=2, padx=5, pady=5)
+label_wallet_balance_label.grid(row=5, column=0, padx=5, pady=5, sticky=tk.W)
+label_wallet_balance.grid(row=5, column=1, padx=5, pady=5)
 label_chan_B_balance.grid(row=2, column=0, padx=5, pady=5)
 label_chan_B_label.grid(row=2, column=1, padx=5, pady=5)
 label_chan_D_balance.grid(row=3, column=0, padx=5, pady=5)
@@ -152,7 +152,7 @@ def sock_checker(node_address):
         encrypted_body = prev_hop.receive()
         decrypted_message = json.loads(decrypt(encrypted_body, sym_key_source.sec()).decode())
         revealed_secret = decrypted_message['secret']
-        cost_paid = route_cost(decrypted_header['route'], len(encrypted_body))
+        #cost_paid = route_cost(decrypted_header['route'], len(encrypted_body))
 
         #check that you can suceesfully unlock the htlc output
         if(not (secret_hash == None) and (sha256(str.encode(revealed_secret)) == secret_hash)):
@@ -171,7 +171,7 @@ def sock_checker(node_address):
             current_channel.paid(commitment_tx.tx_outs[2].amount)
             print(current_channel)
 
-            total_bytes_received_main +=len(encrypted_body)
+            total_bytes_received_main += (len(encrypted_body) - 51)
             total_bytes_received.set(total_bytes_received_main)
 
             wallet_balance = get_total_channel_balance(channels)

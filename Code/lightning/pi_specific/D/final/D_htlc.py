@@ -106,22 +106,21 @@ label_unit_packet = tk.Label(frame, text="sat/byte", bg=bg_colour)
 button_down = tk.Button(frame, text="Down", command=decrease)
 label_wallet_balance_label = tk.Label(frame, text="Total Wallet Balance:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_wallet_balance = tk.Label(frame, textvariable = totalBalance, bg=bg_colour)
-label_chan_B_balance = tk.Label(frame, text="Channel A-D Local Balance:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_chan_B_balance = tk.Label(frame, text="Channel A-B Local:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_chan_B_label = tk.Label(frame, textvariable = channel_A_local, bg=bg_colour)
-label_chan_D_balance = tk.Label(frame, text="Channel D-C Local Balance:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_chan_D_balance = tk.Label(frame, text="Channel B-C Local:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_chan_D_label = tk.Label(frame, textvariable = channel_C_local, bg=bg_colour)
-label_status = tk.Label(frame, text="Node D: Routing Data", font=('Helvetica', 17, 'bold'), bg=bg_colour)
+label_status = tk.Label(frame, text="Node D: Relay", font=('Symbol', 20, 'bold'), bg=bg_colour)
 label_bytes_routed_label = tk.Label(frame, text="Total bytes routed:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_bytes_routed = tk.Label(frame, textvariable = total_bytes_routed, bg=bg_colour)
 
-
 # Lay out widgets
-label_size.grid(row=2, column=3, padx=5, pady=5)
-label_unit_packet.grid(row=2, column=4, padx=5, pady=5)
-button_up.grid(row=1, column=3, columnspan=2, padx=5, pady=5)
-button_down.grid(row=3, column=3, columnspan=2, padx=5, pady=5)
-label_wallet_balance_label.grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
-label_wallet_balance.grid(row=1, column=1, padx=5, pady=5)
+label_size.grid(row=2, column=2, columnspan=2, padx=5, pady=5)
+label_unit_packet.grid(row=2, column=3, padx=5, pady=5, sticky=tk.E)
+button_up.grid(row=1, column=2, columnspan=2, padx=5, pady=5)
+button_down.grid(row=3, column=2, columnspan=2, padx=5, pady=5)
+label_wallet_balance_label.grid(row=5, column=0, padx=5, pady=5, sticky=tk.W)
+label_wallet_balance.grid(row=5, column=1, padx=5, pady=5)
 label_chan_B_balance.grid(row=2, column=0, padx=5, pady=5)
 label_chan_B_label.grid(row=2, column=1, padx=5, pady=5)
 label_chan_D_balance.grid(row=3, column=0, padx=5, pady=5)
@@ -194,12 +193,12 @@ def routing():
       commitment_tx_prev_hop = Tx.parse(BytesIO(bytes.fromhex(decrypted_header['commitment_tx'])))
       secret_hash = check_htlc_and_get_secret_hash(node, commitment_tx_prev_hop, prev_hop_channel)
       print(len(encrypted_body))
-      cost_paid = route_cost(decrypted_header['route'], len(encrypted_body))
+      cost_paid = route_cost(decrypted_header['route'], len(encrypted_body)-51)
 
       #adapt header and encrypt for next hop
       header = decrypted_header
       header['route'] = decrypted_header['route'][1:]
-      cost_to_pay = route_cost(header['route'], len(encrypted_body))
+      cost_to_pay = route_cost(header['route'], len(encrypted_body)-51)
 
       next_hop = get_peer(peers, header['route'][0][0])
       next_hop_channel = get_channel(next_hop, channels)
@@ -215,7 +214,7 @@ def routing():
 
       if(next_hop.receive()==b'header ACK'):
           print("routing "+str(len(encrypted_body))+" bytes")
-          total_bytes_routed_main +=len(encrypted_body)
+          total_bytes_routed_main += (len(encrypted_body) - 51)
           total_bytes_routed.set(total_bytes_routed_main)
           next_hop.send(encrypted_body)
 

@@ -93,8 +93,8 @@ frame.pack(fill=tk.BOTH, expand=True)
 
 # Allow middle cell of grid to grow when window is resized
 frame.columnconfigure(2, weight=1)
-frame.rowconfigure(3, weight=1)
-frame.rowconfigure(5, weight=1)
+#frame.rowconfigure(3, weight=1)
+#frame.rowconfigure(5, weight=1)
 
 
 # Variables for holding temperature data
@@ -120,23 +120,23 @@ label_unit_packet = tk.Label(frame, text="bytes", bg=bg_colour)
 button_down = tk.Button(frame, text="Down", command=decrease)
 label_wallet_balance_label = tk.Label(frame, text="Total Wallet Balance:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_wallet_balance = tk.Label(frame, textvariable = totalBalance, bg=bg_colour)
-label_chan_B_balance = tk.Label(frame, text="Channel A-B Local Balance:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_chan_B_balance = tk.Label(frame, text="Channel A-B Local:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_chan_B_label = tk.Label(frame, textvariable = channel_B_local, bg=bg_colour)
-label_chan_D_balance = tk.Label(frame, text="Channel A-D Local Balance:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_chan_D_balance = tk.Label(frame, text="Channel A-D Local:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_chan_D_label = tk.Label(frame, textvariable = channel_D_local, bg=bg_colour)
-label_status = tk.Label(frame, text="Node A: Sending Data", font=('Helvetica', 15, 'bold'), bg=bg_colour)
-label_bytes_sent_label = tk.Label(frame, text="Total bytes send:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_status = tk.Label(frame, text="Node A: Client", font=('Symbol', 20, 'bold'), bg=bg_colour)
+label_bytes_sent_label = tk.Label(frame, text="Total bytes sent:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_bytes_sent = tk.Label(frame, textvariable = total_bytes_sent, bg=bg_colour)
 label_sat_paid_label = tk.Label(frame, text="Total sat paid:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_sat_paid = tk.Label(frame, textvariable = total_sat_paid, bg=bg_colour)
 
 # Lay out widgets
-label_size.grid(row=2, column=3, padx=5, pady=5)
-label_unit_packet.grid(row=2, column=4, padx=5, pady=5)
-button_up.grid(row=1, column=3, columnspan=2, padx=5, pady=5)
-button_down.grid(row=3, column=3, columnspan=2, padx=5, pady=5)
-label_wallet_balance_label.grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
-label_wallet_balance.grid(row=1, column=1, padx=5, pady=5)
+label_size.grid(row=2, column=2, padx=5, columnspan=2, pady=5)
+label_unit_packet.grid(row=2, column=3, padx=5, pady=5, sticky=tk.E)
+button_up.grid(row=1, column=2, columnspan=2, padx=5, pady=5)
+button_down.grid(row=3, column=2, columnspan=2, padx=5, pady=5)
+label_wallet_balance_label.grid(row=5, column=0, padx=5, pady=5, sticky=tk.W)
+label_wallet_balance.grid(row=5, column=1, padx=5, pady=5)
 label_chan_B_balance.grid(row=2, column=0, padx=5, pady=5)
 label_chan_B_label.grid(row=2, column=1, padx=5, pady=5)
 label_chan_D_balance.grid(row=3, column=0, padx=5, pady=5)
@@ -207,9 +207,11 @@ def send_packets():
   channel_B_local.set(local_balance_AB)
   channel_D_local.set(local_balance_AD)
 
-  while True:
+  i = 0
+  while True and i <1:
     
     if(packet_size_main>0):
+      i += 1
       # find routes
       routes = [[['mfwnjj1Jbd1uwXbj5Q4FUjmkEcGqQQsYDn', prices['mfwnjj1Jbd1uwXbj5Q4FUjmkEcGqQQsYDn']], ['n1weDdde5xXLfPeutESLaG8swr5jLCqz72', prices['n1weDdde5xXLfPeutESLaG8swr5jLCqz72']]],
                 [['mmqrZXdvAi8mcjvXGJX2eJdA37kWXmCWjW', prices['mmqrZXdvAi8mcjvXGJX2eJdA37kWXmCWjW']], ['n1weDdde5xXLfPeutESLaG8swr5jLCqz72', prices['n1weDdde5xXLfPeutESLaG8swr5jLCqz72']]]]
@@ -229,7 +231,10 @@ def send_packets():
       message = secrets.token_urlsafe(packet_size_main)
       body = {"secret":secret, "message":message}
       encrypted_body = encrypt(str.encode(json.dumps(body)), sym_key_dest.sec())
-      cost = route_cost(cheapest_route, len(encrypted_body))
+      print("message size: "+str(len(message)))
+      print("secret size: "+str(len(secret)))
+      print("encrypted body size: "+str(len(encrypted_body)))
+      cost = route_cost(cheapest_route, len(message))
 
       commitment_tx = new_commitment_tx(node, next_hop_channel, cost, secret_hash)
 
@@ -259,7 +264,7 @@ def send_packets():
         total_sat_paid_main += cost
         total_sat_paid.set(total_sat_paid_main)
 
-        total_bytes_sent_main += len(encrypted_body) 
+        total_bytes_sent_main += (len(encrypted_body)-51) 
         total_bytes_sent.set(total_bytes_sent_main)
 
         wallet_balance = get_total_channel_balance(channels)
