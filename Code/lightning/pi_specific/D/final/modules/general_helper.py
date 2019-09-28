@@ -57,6 +57,14 @@ class Channel:
     data['funding_tx'] = self.funding_tx.serialize().hex()
     return json.dumps(data)
 
+  def reset(self, orientation):
+    if orientation==0:
+      self.local_amt = self.funding_tx.tx_ins[0].value()
+      self.remote_amt = 0
+    else:
+      self.local_amt = 0
+      self.remote_amt = self.funding_tx.tx_ins[0].value()
+
 def create_btc_address(passphrase):
   secret = little_endian_to_int(hash256(passphrase))
   publicKey = PrivateKey(secret).point
@@ -127,6 +135,7 @@ def add_channel(local_node, remote_peer, input_tx_id, input_tx_index):
   remote_peer.send(str.encode(new_channel.toJSON()))
 
   return new_channel
+
 
 def listen_for_channel_request(peer):
 

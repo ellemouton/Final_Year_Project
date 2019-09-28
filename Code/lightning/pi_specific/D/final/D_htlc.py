@@ -47,7 +47,32 @@ GUI
 
 global price_sock
 global price 
-total_bytes_routed_main = 0
+global total_bytes_routed_main
+
+def reset_variables():
+  global total_bytes_routed_main
+
+  total_bytes_routed_main = 0
+
+def reset_channels():
+  global channels
+  global total_bytes_routed_main
+
+  channels[0].reset(0)
+  channels[1].reset(1)
+
+  wallet_balance = get_total_channel_balance(channels)
+  local_balance_DC = get_channel_balance(channels[0])
+  local_balance_DA = get_channel_balance(channels[1])
+
+  totalBalance.set(wallet_balance)
+  channel_A_local.set(local_balance_DA)
+  channel_C_local.set(local_balance_DC)
+  total_bytes_routed.set(total_bytes_routed_main)
+
+def set_up():
+  reset_variables()
+  reset_channels()
 
 def increase():
     global price
@@ -104,7 +129,7 @@ button_up = tk.Button(frame, text="Up", command=increase)
 label_size = tk.Label(frame, textvariable = price, bg=bg_colour)
 label_unit_packet = tk.Label(frame, text="sat/byte", bg=bg_colour)
 button_down = tk.Button(frame, text="Down", command=decrease)
-label_wallet_balance_label = tk.Label(frame, text="Total Wallet Balance:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_wallet_balance_label = tk.Label(frame, text="Total Wallet Balance:", font=('Helvetica', 13, 'bold', 'italic'), bg=bg_colour)
 label_wallet_balance = tk.Label(frame, textvariable = totalBalance, bg=bg_colour)
 label_chan_B_balance = tk.Label(frame, text="Channel A-B Local:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_chan_B_label = tk.Label(frame, textvariable = channel_A_local, bg=bg_colour)
@@ -113,6 +138,7 @@ label_chan_D_label = tk.Label(frame, textvariable = channel_C_local, bg=bg_colou
 label_status = tk.Label(frame, text="Node D: Relay", font=('Symbol', 20, 'bold'), bg=bg_colour)
 label_bytes_routed_label = tk.Label(frame, text="Total bytes routed:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_bytes_routed = tk.Label(frame, textvariable = total_bytes_routed, bg=bg_colour)
+button_reset = tk.Button(frame, text="reset", command=set_up)
 
 # Lay out widgets
 label_size.grid(row=2, column=2, columnspan=2, padx=5, pady=5)
@@ -128,11 +154,13 @@ label_chan_D_label.grid(row=3, column=1, padx=5, pady=5)
 label_status.grid(row=0, column=0, columnspan=3, padx=5, pady=5)
 label_bytes_routed_label.grid(row=4, column=3, padx=5, pady=5)
 label_bytes_routed.grid(row=4, column=4, padx=5, pady=5)
-
+button_reset.grid(row=0, column=4, padx=5, pady=5)
 
 # create BTC address. secret -> private key -> public key
 node = BTC_node(b'nodeD')
 print("Node Bitcoin Address: "+str(node.address))
+
+reset_variables()
 
 # Get D's wallet transaction
 input_tx_id = 'e49a74f9b24d75b8e168b90b0d3eb930d11b3a387a2380343f159431bbb43d62'

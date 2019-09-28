@@ -28,7 +28,6 @@ import tkinter as tk
       Set up node, peers and channels
 '''
 global host
-total_bytes_received_main = 0
 
 peers = []
 channels = []
@@ -47,6 +46,33 @@ GUI
 
 global price_sock
 global price 
+global total_bytes_received_main
+
+
+def reset_variables():
+  global total_bytes_received_main
+
+  total_bytes_received_main = 0
+
+def reset_channels():
+  global channels
+  global total_bytes_received_main
+
+  channels[0].reset(1)
+  channels[1].reset(1)
+
+  wallet_balance = get_total_channel_balance(channels)
+  local_balance_CB = get_channel_balance(channels[0])
+  local_balance_CD = get_channel_balance(channels[1])
+
+  totalBalance.set(wallet_balance)
+  channel_B_local.set(local_balance_CB)
+  channel_D_local.set(local_balance_CD)
+  total_bytes_received.set(total_bytes_received_main)
+
+def set_up():
+    reset_variables()
+    reset_channels()
 
 def increase():
     global price
@@ -82,8 +108,6 @@ frame.pack(fill=tk.BOTH, expand=True)
 
 # Allow middle cell of grid to grow when window is resized
 frame.columnconfigure(2, weight=1)
-#frame.rowconfigure(3, weight=1)
-#frame.rowconfigure(5, weight=1)
 
 
 # Variables for holding temperature data
@@ -113,6 +137,7 @@ label_chan_D_label = tk.Label(frame, textvariable = channel_D_local, bg=bg_colou
 label_status = tk.Label(frame, text="Node C: Gateway", font=('Symbol', 20, 'bold'), bg=bg_colour)
 label_bytes_received_label = tk.Label(frame, text="Total bytes routed:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_bytes_received = tk.Label(frame, textvariable = total_bytes_received, bg=bg_colour)
+button_reset = tk.Button(frame, text="reset", command=set_up)
 
 
 # Lay out widgets
@@ -129,6 +154,7 @@ label_chan_D_label.grid(row=3, column=1, padx=5, pady=5)
 label_status.grid(row=0, column=0, columnspan=3, padx=5, pady=5)
 label_bytes_received_label.grid(row=4, column=3, padx=5, pady=5)
 label_bytes_received.grid(row=4, column=4, padx=5, pady=5)
+button_reset.grid(row=0, column=4, padx=5, pady=5)
 
 def sock_checker(node_address):
     global total_bytes_received_main
@@ -193,6 +219,7 @@ create BTC address. secret -> private key -> public key
 node = BTC_node(b'nodeC')
 print("Node Bitcoin Address: "+str(node.address))
 
+reset_variables()
 
 '''
 Automatically listen for peers A, B and D
