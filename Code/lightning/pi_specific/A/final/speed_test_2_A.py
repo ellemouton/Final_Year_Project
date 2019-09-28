@@ -1,4 +1,4 @@
-''' 
+'''
 Imports and determine if running on Mac or RPi
 '''
 import platform
@@ -35,20 +35,34 @@ port_C = 3001
 sock_B = SocketClient(host_B, port_B)
 sock_B.connect()
 
+sizes = [1,10,100,500]
 
-while True:
-  num_bytes = int(input("Num bytes? "))
-  package = os.urandom(num_bytes)
 
-  t0 = time.time()
+for s in sizes:
 
-  sock_B.send(package)
-  sock_B.receive()
-  
-  t1 = time.time()
+    times = []
 
-  total = t1 - t0
-  print("%.10f"%total)
+    for i in range(20):
+        package = os.urandom(s)
+
+        t0 = time.time()
+
+        sock_B.send(package)
+        sock_B.receive()
+
+        t1 = time.time()
+
+        total = t1 - t0
+
+        times.append(total)
+
+    fileName = 'results_2_'+str(s)+'.txt'
+    with open(fileName, 'w') as f:
+        f.truncate(0)
+
+        for t in times:
+            f.write('%.10f\n' % t)
+
 
 
 

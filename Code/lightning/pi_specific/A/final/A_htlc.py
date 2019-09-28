@@ -1,4 +1,4 @@
-''' 
+'''
 Imports and determine if running on Mac or RPi
 '''
 import platform
@@ -36,31 +36,31 @@ global host_D
 
 peers =[]
 channels =[]
-global packet_size_main 
+global packet_size_main
 global current_packet_multiple
 global total_bytes_sent_main
-global total_sat_paid_main 
+global total_sat_paid_main
 
 prices = {"n1weDdde5xXLfPeutESLaG8swr5jLCqz72": 0, "mfwnjj1Jbd1uwXbj5Q4FUjmkEcGqQQsYDn": 0, "mmqrZXdvAi8mcjvXGJX2eJdA37kWXmCWjW": 0}
 
 ''' GUI '''
 def reset_variables():
-  global packet_size_main 
+  global packet_size_main
   global current_packet_multiple
   global total_bytes_sent_main
-  global total_sat_paid_main 
-  
+  global total_sat_paid_main
+
 
   packet_size_main = 0
   current_packet_multiple = 7
   total_bytes_sent_main = 0
   total_sat_paid_main = 0
-  
+
 
 def reset_channels():
   global channels
   global total_bytes_sent_main
-  global total_sat_paid_main 
+  global total_sat_paid_main
 
   channels[0].reset(0)
   channels[1].reset(0)
@@ -95,7 +95,7 @@ def increase():
     global go
 
     go = True
-    
+
     packet_size_main += current_packet_multiple
 
     swap_packet_size_multiple()
@@ -103,7 +103,7 @@ def increase():
 
     packet_size.set(packet_size.get()+10)
 
-    
+
 def decrease():
     global packet_size
     global packet_size_main
@@ -114,7 +114,7 @@ def decrease():
     swap_packet_size_multiple()
 
     packet_size_main -= current_packet_multiple
-    
+
     val = packet_size.get()-10
 
     if(packet_size_main <= 0):
@@ -122,7 +122,7 @@ def decrease():
         packet_size.set(0)
     else:
         packet_size.set(val)
- 
+
 # Create the main window
 root = tk.Tk()
 root.title("Node A: Client")
@@ -252,15 +252,15 @@ def send_packets():
 
 
   while True:
-    
-    if(packet_size_main>0):
-    #if(packet_size_main>0 and go==True):
+
+    #if(packet_size_main>0):
+    if(packet_size_main>0 and go==True):
 
       # find routes
       routes = [[['mfwnjj1Jbd1uwXbj5Q4FUjmkEcGqQQsYDn', prices['mfwnjj1Jbd1uwXbj5Q4FUjmkEcGqQQsYDn']], ['n1weDdde5xXLfPeutESLaG8swr5jLCqz72', prices['n1weDdde5xXLfPeutESLaG8swr5jLCqz72']]],
                 [['mmqrZXdvAi8mcjvXGJX2eJdA37kWXmCWjW', prices['mmqrZXdvAi8mcjvXGJX2eJdA37kWXmCWjW']], ['n1weDdde5xXLfPeutESLaG8swr5jLCqz72', prices['n1weDdde5xXLfPeutESLaG8swr5jLCqz72']]]]
 
-      #body: secret and actual message -> encrypt for destination 
+      #body: secret and actual message -> encrypt for destination
       secret = secrets.token_urlsafe(16)
       secret_hash = sha256(str.encode(secret))
       message = secrets.token_urlsafe(packet_size_main)
@@ -269,7 +269,7 @@ def send_packets():
       print("message size: "+str(len(message)))
       print("secret size: "+str(len(secret)))
       print("encrypted body size: "+str(len(encrypted_body)))
-      
+
       success = False
 
       while success == False:
@@ -277,7 +277,7 @@ def send_packets():
         # Find cost of each route and choose cheapest
         cheap_route_index = find_cheapest_route(routes)
         cheapest_route = routes[cheap_route_index]
-        
+
         # get next hop from route and hence get relevent channel
         next_hop = get_peer(peers, routes[cheap_route_index][0][0])
         next_hop_channel = get_channel(next_hop, channels)
@@ -297,11 +297,11 @@ def send_packets():
         # send body if header is accepted
         if(next_hop.receive()==b'header ACK'):
           next_hop.send(encrypted_body)
-        
+
         reply = json.loads(next_hop.receive().decode())
         commitment_tx = Tx.parse(BytesIO(bytes.fromhex(reply['commitment_tx'])))
         revealed_secret = reply['secret']
-        
+
         if(revealed_secret == secret):
           print("Successful delivery of message proven. Thus update channel state")
           success = True
@@ -313,7 +313,7 @@ def send_packets():
           total_sat_paid_main += cost
           total_sat_paid.set(total_sat_paid_main)
 
-          total_bytes_sent_main += (len(encrypted_body)-51) 
+          total_bytes_sent_main += (len(encrypted_body)-51)
           total_bytes_sent.set(total_bytes_sent_main)
 
           wallet_balance = get_total_channel_balance(channels)

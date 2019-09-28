@@ -1,4 +1,4 @@
-''' 
+'''
 Imports and determine if running on Mac or RPi
 '''
 import platform
@@ -38,11 +38,14 @@ sock_B.connect()
 sock_C = SocketClient(host_C, port_C)
 sock_C.connect()
 
-while True:
-	num_bytes = int(input("Num bytes? "))
-	package = os.urandom(num_bytes)
-	sock_C.send(b'1')
-	sock_B.send(package)
+sizes = [1,10,100,500]
+
+
+for s in sizes:
+    for i in range(20):
+        package = os.urandom(s)
+        sock_C.send(b'1')
+        sock_B.send(package)
 
 
 

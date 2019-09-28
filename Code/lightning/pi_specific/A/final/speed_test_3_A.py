@@ -1,4 +1,4 @@
-''' 
+'''
 Imports and determine if running on Mac or RPi
 '''
 import platform
@@ -70,69 +70,84 @@ for c in channels:
 '''
 
 print("----Send Mode----")
-
 def send_packets():
-  global packet_size_main
+    global packet_size_main
 
-  # destination (C's address (or rather, the Gateways BTC address))
-  destination = 'n1weDdde5xXLfPeutESLaG8swr5jLCqz72'
-  sym_key_dest = get_peer(peers, destination).sym_key
+    # destination (C's address (or rather, the Gateways BTC address))
+    destination = 'n1weDdde5xXLfPeutESLaG8swr5jLCqz72'
+    sym_key_dest = get_peer(peers, destination).sym_key
 
-  while True:
-    
-    packet_size_main = int(input("Num bytes: "))
+    sizes = [1,10,100,500]
 
-    if(packet_size_main>0):
-      # find routes
-      routes = [[['mfwnjj1Jbd1uwXbj5Q4FUjmkEcGqQQsYDn', prices['mfwnjj1Jbd1uwXbj5Q4FUjmkEcGqQQsYDn']], ['n1weDdde5xXLfPeutESLaG8swr5jLCqz72', prices['n1weDdde5xXLfPeutESLaG8swr5jLCqz72']]],
-                [['mmqrZXdvAi8mcjvXGJX2eJdA37kWXmCWjW', prices['mmqrZXdvAi8mcjvXGJX2eJdA37kWXmCWjW']], ['n1weDdde5xXLfPeutESLaG8swr5jLCqz72', prices['n1weDdde5xXLfPeutESLaG8swr5jLCqz72']]]]
+    for s in sizes:
 
-      # Find cost of each route and choose cheapest
-      cheap_route_index = find_cheapest_route(routes)
-      cheapest_route = routes[cheap_route_index]
-      
-      # get next hop from route and hence get relevent channel
-      next_hop = get_peer(peers, routes[cheap_route_index][0][0])
-      next_hop_channel = get_channel(next_hop, channels)
+        packet_size_main = s
+        times = []
 
-      #body: secret and actual message -> encrypt for destination 
-      secret = secrets.token_urlsafe(16)
-      secret_hash = sha256(str.encode(secret))
-      message = secrets.token_urlsafe(packet_size_main)
-      body = {"secret":secret, "message":message}
-      encrypted_body = encrypt(str.encode(json.dumps(body)), sym_key_dest.sec())
-      cost = route_cost(cheapest_route, len(message))
+        for i in range(20):
 
-      commitment_tx = new_commitment_tx(node, next_hop_channel, cost, secret_hash)
 
-      # header: source, route, secret hash -> encrypt for next hop
-      header = {"source":node.address, "route": cheapest_route, "commitment_tx": str(commitment_tx.serialize().hex())}
-      sym_key_next_hop = get_peer(peers, cheapest_route[0][0]).sym_key
-      encrypted_header = encrypt(str.encode(json.dumps(header)), sym_key_next_hop.sec())
+            if(packet_size_main>0):
+              # find routes
+              routes = [[['mfwnjj1Jbd1uwXbj5Q4FUjmkEcGqQQsYDn', prices['mfwnjj1Jbd1uwXbj5Q4FUjmkEcGqQQsYDn']], ['n1weDdde5xXLfPeutESLaG8swr5jLCqz72', prices['n1weDdde5xXLfPeutESLaG8swr5jLCqz72']]],
+                        [['mmqrZXdvAi8mcjvXGJX2eJdA37kWXmCWjW', prices['mmqrZXdvAi8mcjvXGJX2eJdA37kWXmCWjW']], ['n1weDdde5xXLfPeutESLaG8swr5jLCqz72', prices['n1weDdde5xXLfPeutESLaG8swr5jLCqz72']]]]
 
-      t0 = time.time()
-      # send header
-      next_hop.send(encrypted_header)
+              # Find cost of each route and choose cheapest
+              cheap_route_index = find_cheapest_route(routes)
+              cheapest_route = routes[cheap_route_index]
 
-      # send body if header is accepted
-      if(next_hop.receive()==b'header ACK'):
-        next_hop.send(encrypted_body)
-      
-      reply = json.loads(next_hop.receive().decode())
-      commitment_tx = Tx.parse(BytesIO(bytes.fromhex(reply['commitment_tx'])))
-      revealed_secret = reply['secret']
-      
-      if(revealed_secret == secret):
-        t1 = time.time()
-        total = t1-t0
-        print("%.10f"%total)
+              # get next hop from route and hence get relevent channel
+              next_hop = get_peer(peers, routes[cheap_route_index][0][0])
+              next_hop_channel = get_channel(next_hop, channels)
 
-        print("Successful delivery of message proven. Thus update channel state")
+              #body: secret and actual message -> encrypt for destination
+              secret = secrets.token_urlsafe(16)
+              secret_hash = sha256(str.encode(secret))
+              message = secrets.token_urlsafe(packet_size_main)
+              body = {"secret":secret, "message":message}
+              encrypted_body = encrypt(str.encode(json.dumps(body)), sym_key_dest.sec())
+              cost = route_cost(cheapest_route, len(message))
 
-        next_hop_channel.pay(commitment_tx.tx_outs[2].amount)
+              commitment_tx = new_commitment_tx(node, next_hop_channel, cost, secret_hash)
 
-        print(get_channel(next_hop, channels))
-      
+              # header: source, route, secret hash -> encrypt for next hop
+              header = {"source":node.address, "route": cheapest_route, "commitment_tx": str(commitment_tx.serialize().hex())}
+              sym_key_next_hop = get_peer(peers, cheapest_route[0][0]).sym_key
+              encrypted_header = encrypt(str.encode(json.dumps(header)), sym_key_next_hop.sec())
+
+              t0 = time.time()
+              # send header
+              next_hop.send(encrypted_header)
+
+              # send body if header is accepted
+              if(next_hop.receive()==b'header ACK'):
+                next_hop.send(encrypted_body)
+
+              reply = json.loads(next_hop.receive().decode())
+              commitment_tx = Tx.parse(BytesIO(bytes.fromhex(reply['commitment_tx'])))
+              revealed_secret = reply['secret']
+
+              if(revealed_secret == secret):
+                t1 = time.time()
+                total = t1-t0
+                #print("%.10f"%total)
+                times.append(total)
+
+                print("Successful delivery of message proven. Thus update channel state")
+
+                next_hop_channel.pay(commitment_tx.tx_outs[2].amount)
+
+                #print(get_channel(next_hop, channels))
+
+        fileName = 'results_3_'+str(s)+'.txt'
+        with open(fileName, 'w') as f:
+            f.truncate(0)
+
+            for t in times:
+                f.write('%.10f\n' % t)
+
+
+
 
 send_packets()
 

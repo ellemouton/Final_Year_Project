@@ -1,4 +1,4 @@
-''' 
+'''
 Imports and determine if running on Mac or RPi
 '''
 import platform
@@ -93,15 +93,15 @@ def routing():
       #get header info
       commitment_tx_prev_hop = Tx.parse(BytesIO(bytes.fromhex(decrypted_header['commitment_tx'])))
       secret_hash = check_htlc_and_get_secret_hash(node, commitment_tx_prev_hop, prev_hop_channel)
-      print("Body lenght: "+str(len(encrypted_body)-51))
+      #print("Body lenght: "+str(len(encrypted_body)-51))
       cost_paid = route_cost(decrypted_header['route'], len(encrypted_body)-51)
-      print("cost_paid: "+str(cost_paid))
+      #print("cost_paid: "+str(cost_paid))
 
       #adapt header and encrypt for next hop
       header = decrypted_header
       header['route'] = decrypted_header['route'][1:]
       cost_to_pay = route_cost(header['route'], len(encrypted_body)-51)
-      print("cost_to_pay: "+str(cost_to_pay))
+      #print("cost_to_pay: "+str(cost_to_pay))
 
       next_hop = get_peer(peers, header['route'][0][0])
       next_hop_channel = get_channel(next_hop, channels)
@@ -113,12 +113,12 @@ def routing():
       encrypted_header = encrypt(str.encode(json.dumps(header)), sym_key_next_hop.sec())
 
       #print(encrypted_body)
-      
+
       #send header
       next_hop.send(encrypted_header)
 
       if(next_hop.receive()==b'header ACK'):
-          print("routing "+str(len(encrypted_body)-51)+" bytes")
+       #   print("routing "+str(len(encrypted_body)-51)+" bytes")
           next_hop.send(encrypted_body)
 
       reply = json.loads(next_hop.receive().decode())
@@ -126,7 +126,7 @@ def routing():
       revealed_secret = reply['secret']
 
       if(not (secret_hash == None) and (sha256(str.encode(revealed_secret)) == secret_hash)):
-          print("I can sign the htlc output with the secret")
+        #  print("I can sign the htlc output with the secret")
 
           next_hop_channel.pay(cost_to_pay)
 
@@ -141,13 +141,13 @@ def routing():
           prev_hop.send(str.encode(json.dumps(reply)))
 
           prev_hop_channel.paid(cost_paid)
-          
-          for c in channels:
-            print(c)
+
+         # for c in channels:
+          #  print(c)
 
       else:
           print("Cannot unlock HTLC")
-      
+
 
 
 routing()

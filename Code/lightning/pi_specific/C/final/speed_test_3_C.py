@@ -1,4 +1,4 @@
-''' 
+'''
 Imports and determine if running on Mac or RPi
 '''
 import platform
@@ -63,7 +63,7 @@ def sock_checker(node_address):
 
         #check that you can suceesfully unlock the htlc output
         if(not (secret_hash == None) and (sha256(str.encode(revealed_secret)) == secret_hash)):
-            print("I can sign the htlc output with the secret")
+            #print("I can sign the htlc output with the secret")
 
             #sign the commitment tx
             z = commitment_tx.sig_hash(0)
@@ -76,9 +76,9 @@ def sock_checker(node_address):
             prev_hop.send(str.encode(json.dumps(reply)))
 
             current_channel.paid(commitment_tx.tx_outs[2].amount)
-            print(current_channel)
+            #print(current_channel)
 
-            print("Total Balance: "+str(get_total_channel_balance(channels)))
+            #print("Total Balance: "+str(get_total_channel_balance(channels)))
 
         else:
             print("Cannot unlock HTLC")

@@ -1,4 +1,4 @@
-''' 
+'''
 Imports and determine if running on Mac or RPi
 '''
 import platform
@@ -45,7 +45,7 @@ GUI
 '''
 
 global price_sock
-global price 
+global price
 global total_bytes_received_main
 
 
@@ -77,7 +77,7 @@ def set_up():
 def increase():
     global price
     global price_sock
-    
+
     new_price = price.get()+1
     price.set(new_price)
     price_sock.send(new_price.to_bytes(4, 'little'))
