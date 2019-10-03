@@ -1,6 +1,8 @@
 
 #!/bin/bash
 
+./update_modules
+
 sshpass -p 'Bristol' scp -r A/final pi@192.168.0.126:~/Documents/other_nodes/A
 sshpass -p 'Bristol' scp -r B/final pi@192.168.0.126:~/Documents/other_nodes/B
 sshpass -p 'Bristol' scp -r C/final pi@192.168.0.126:~/Documents

@@ -22,6 +22,7 @@ from helper import sha256, decode_base58, SIGHASH_ALL, int_to_little_endian, enc
 import secrets
 import json
 import threading
+from random import randint
 
 '''
       Set up node, peers and channels
@@ -29,8 +30,6 @@ import threading
 global host
 global host_C
 global channels
-
-total_bytes_routed_main = 0
 
 peers = []
 channels = []
@@ -141,7 +140,7 @@ total_bytes_routed.set(0)
 # Create widgets
 button_up = tk.Button(frame, text="Up", command=increase)
 label_size = tk.Label(frame, textvariable = price, bg=bg_colour)
-label_unit_packet = tk.Label(frame, text="sat/byte", bg=bg_colour)
+label_unit_packet = tk.Label(frame, text="sat/kB", bg=bg_colour)
 button_down = tk.Button(frame, text="Down", command=decrease)
 button_evil= tk.Button(frame, text="Malicious", command=malicious)
 label_wallet_balance_label = tk.Label(frame, text="Total Wallet Balance:", font=('Helvetica', 13, 'bold', 'italic'), bg=bg_colour)
@@ -151,7 +150,7 @@ label_chan_B_label = tk.Label(frame, textvariable = channel_A_local, bg=bg_colou
 label_chan_D_balance = tk.Label(frame, text="Channel B-C Local:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_chan_D_label = tk.Label(frame, textvariable = channel_C_local, bg=bg_colour)
 label_status = tk.Label(frame, text="Node B: Relay", font=('Symbol', 20, 'bold'), bg=bg_colour)
-label_bytes_routed_label = tk.Label(frame, text="Total bytes routed:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_bytes_routed_label = tk.Label(frame, text="Total kB routed:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_bytes_routed = tk.Label(frame, textvariable = total_bytes_routed, bg=bg_colour)
 button_reset = tk.Button(frame, text="reset", command=set_up)
 
@@ -169,8 +168,8 @@ label_chan_B_label.grid(row=2, column=1, padx=5, pady=5)
 label_chan_D_balance.grid(row=3, column=0, padx=5, pady=5)
 label_chan_D_label.grid(row=3, column=1, padx=5, pady=5)
 label_status.grid(row=0, column=0, columnspan=3, padx=5, pady=5)
-label_bytes_routed_label.grid(row=4, column=3, padx=5, pady=5)
-label_bytes_routed.grid(row=4, column=4, padx=5, pady=5)
+label_bytes_routed_label.grid(row=5, column=3, padx=5, pady=5)
+label_bytes_routed.grid(row=5, column=4, padx=5, pady=5)
 button_reset.grid(row=0, column=4, padx=5, pady=5)
 
 
@@ -180,6 +179,7 @@ node = BTC_node(b'nodeB')
 print("Node Bitcoin Address: "+str(node.address))
 
 evil = False
+
 reset_variables()
 
 # Get B's wallet transaction
@@ -227,23 +227,26 @@ def routing():
   channel_C_local.set(local_balance_BC)
 
   while True:
-      received_header = prev_hop.receive()
+      
+      received_header = json.loads((prev_hop.receive()).decode())
 
       if evil:
-        
+       
+        commitment_tx_prev_hop = Tx.parse(BytesIO(bytes.fromhex(received_header['commitment_tx'])))
+        num_packets = received_header['num_packets']
+
         prev_hop.send(b'header ACK')
-        decrypted_header = json.loads(decrypt(received_header, sym_key_prev_hop.sec()).decode())
-        commitment_tx_prev_hop = Tx.parse(BytesIO(bytes.fromhex(decrypted_header['commitment_tx'])))
-        encrypted_body = prev_hop.receive()
+
+        for i in range(num_packets):
+          prev_hop.receive()
+          prev_hop.send(b'packet ACK')
+
 
         #sign the commitment tx
-        z = commitment_tx_prev_hop.sig_hash(0)
-        signature = node.private_key.sign(z).der() + SIGHASH_ALL.to_bytes(1, 'big')
-        script_sig = commitment_tx_prev_hop.tx_ins[0].script_sig + Script([signature])
-        commitment_tx_prev_hop.tx_ins[0].script_sig = script_sig
+        commitment_tx_prev_hop.tx_ins[0].script_sig = get_script_sig(commitment_tx_prev_hop, node.private_key)
 
         #construct fake secret
-        fake_secret = 'fake_pre_image'
+        fake_secret = randint(1000000000000000000000000000000000000000, 2000000000000000000000000000000000000000)
 
         reply = {"commitment_tx": str(commitment_tx_prev_hop.serialize().hex()), "secret": fake_secret}
 
@@ -252,59 +255,55 @@ def routing():
 
       else:
 
+        commitment_tx_prev_hop = Tx.parse(BytesIO(bytes.fromhex(received_header['commitment_tx'])))
+        H = check_htlc_and_get_secret_hash(node, commitment_tx_prev_hop, prev_hop_channel)
+        num_packets = received_header['num_packets']
+        packet_size = received_header['packet_size']
+        num_kilobytes = int(num_packets*packet_size/1000)
+
+        #receive packets
         
-        decrypted_header = json.loads(decrypt(received_header, sym_key_prev_hop.sec()).decode())
 
         prev_hop.send(b'header ACK')
 
-        #receive body
-        encrypted_body = prev_hop.receive()
-
-        #get header info
-        commitment_tx_prev_hop = Tx.parse(BytesIO(bytes.fromhex(decrypted_header['commitment_tx'])))
-        secret_hash = check_htlc_and_get_secret_hash(node, commitment_tx_prev_hop, prev_hop_channel)
-        print("Body lenght: "+str(len(encrypted_body)-51))
-        cost_paid = route_cost(decrypted_header['route'], len(encrypted_body)-51)
-        print("cost_paid: "+str(cost_paid))
-
-        #adapt header and encrypt for next hop
-        header = decrypted_header
-        header['route'] = decrypted_header['route'][1:]
-        cost_to_pay = route_cost(header['route'], len(encrypted_body)-51)
-        print("cost_to_pay: "+str(cost_to_pay))
+        packet_payloads = []
+        for i in range(num_packets):
+          packet_payloads.append(prev_hop.receive())
+          prev_hop.send(b'packet ACK')
+          
+        cost_paid = int(route_cost(received_header['route'], num_kilobytes))
+        
+        #adapt header for next hop
+        header = received_header
+        header['route'] = received_header['route'][1:]
+        cost_to_pay = int(route_cost(header['route'], num_kilobytes))
 
         next_hop = get_peer(peers, header['route'][0][0])
         next_hop_channel = get_channel(next_hop, channels)
 
-        commitment_tx_next_hop = new_commitment_tx(node, next_hop_channel, cost_to_pay, secret_hash)
+        commitment_tx_next_hop = new_commitment_tx(node, next_hop_channel, cost_to_pay, H)
         header['commitment_tx'] = str(commitment_tx_next_hop.serialize().hex())
 
-        sym_key_next_hop = next_hop.sym_key
-        encrypted_header = encrypt(str.encode(json.dumps(header)), sym_key_next_hop.sec())
-
         #send header
-        next_hop.send(encrypted_header)
+        next_hop.send(str.encode(json.dumps(header)))
 
         if(next_hop.receive()==b'header ACK'):
-            print("routing "+str(len(encrypted_body)-51)+" bytes")
-            total_bytes_routed_main += (len(encrypted_body) - 51)
-            total_bytes_routed.set(total_bytes_routed_main)
-            next_hop.send(encrypted_body)
+
+          for i in range(num_packets):
+            next_hop.send(packet_payloads[i])
+            next_hop.receive()
 
         reply = json.loads(next_hop.receive().decode())
         commitment_tx_next_hop = Tx.parse(BytesIO(bytes.fromhex(reply['commitment_tx'])))
         revealed_secret = reply['secret']
 
-        if(not (secret_hash == None) and (sha256(str.encode(revealed_secret)) == secret_hash)):
+        if(not (H == None) and (sha256(str.encode(str(revealed_secret))) == H)):
             print("I can sign the htlc output with the secret")
 
             next_hop_channel.pay(cost_to_pay)
 
             #sign the commitment tx
-            z = commitment_tx_prev_hop.sig_hash(0)
-            signature = node.private_key.sign(z).der() + SIGHASH_ALL.to_bytes(1, 'big')
-            script_sig = commitment_tx_prev_hop.tx_ins[0].script_sig + Script([signature])
-            commitment_tx_prev_hop.tx_ins[0].script_sig = script_sig
+            commitment_tx_prev_hop.tx_ins[0].script_sig = get_script_sig(commitment_tx_prev_hop, node.private_key)
 
             reply = {"commitment_tx": str(commitment_tx_prev_hop.serialize().hex()), "secret": revealed_secret}
 
@@ -314,6 +313,10 @@ def routing():
             
             for c in channels:
               print(c)
+
+
+            total_bytes_routed_main += num_kilobytes
+            total_bytes_routed.set(total_bytes_routed_main)
 
             wallet_balance = get_total_channel_balance(channels)
             local_balance_BC = get_channel_balance(channels[0])

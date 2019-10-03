@@ -77,14 +77,14 @@ def send_packets():
     destination = 'n1weDdde5xXLfPeutESLaG8swr5jLCqz72'
     sym_key_dest = get_peer(peers, destination).sym_key
 
-    sizes = [1,10,100,500]
+    sizes = [1,10,100,500, 1000, 1100, 1200]
 
     for s in sizes:
 
         packet_size_main = s
         times = []
 
-        for i in range(20):
+        for i in range(10):
 
 
             if(packet_size_main>0):
@@ -100,6 +100,8 @@ def send_packets():
               next_hop = get_peer(peers, routes[cheap_route_index][0][0])
               next_hop_channel = get_channel(next_hop, channels)
 
+              t0 = time.time()
+              
               #body: secret and actual message -> encrypt for destination
               secret = secrets.token_urlsafe(16)
               secret_hash = sha256(str.encode(secret))
@@ -115,7 +117,7 @@ def send_packets():
               sym_key_next_hop = get_peer(peers, cheapest_route[0][0]).sym_key
               encrypted_header = encrypt(str.encode(json.dumps(header)), sym_key_next_hop.sec())
 
-              t0 = time.time()
+              
               # send header
               next_hop.send(encrypted_header)
 

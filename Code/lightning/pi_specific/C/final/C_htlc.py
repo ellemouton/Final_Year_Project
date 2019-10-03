@@ -22,6 +22,7 @@ import secrets
 import json
 import threading
 import tkinter as tk
+import shamir
 
 
 '''
@@ -126,16 +127,16 @@ total_bytes_received.set(0)
 # Create widgets
 button_up = tk.Button(frame, text="Up", command=increase)
 label_size = tk.Label(frame, textvariable = price, bg=bg_colour)
-label_unit_packet = tk.Label(frame, text="sat/byte", bg=bg_colour)
+label_unit_packet = tk.Label(frame, text="sat/kB", bg=bg_colour)
 button_down = tk.Button(frame, text="Down", command=decrease)
 label_wallet_balance_label = tk.Label(frame, text="Total Wallet Balance:", font=('Helvetica', 13, 'bold', 'italic'), bg=bg_colour)
 label_wallet_balance = tk.Label(frame, textvariable = totalBalance, bg=bg_colour)
-label_chan_B_balance = tk.Label(frame, text="Channel C-B Local:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_chan_B_balance = tk.Label(frame, text="Channel B-C Local:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_chan_B_label = tk.Label(frame, textvariable = channel_B_local, bg=bg_colour)
-label_chan_D_balance = tk.Label(frame, text="Channel C-D Local:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_chan_D_balance = tk.Label(frame, text="Channel D-C Local:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_chan_D_label = tk.Label(frame, textvariable = channel_D_local, bg=bg_colour)
 label_status = tk.Label(frame, text="Node C: Gateway", font=('Symbol', 20, 'bold'), bg=bg_colour)
-label_bytes_received_label = tk.Label(frame, text="Total bytes routed:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_bytes_received_label = tk.Label(frame, text="Total kB received:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_bytes_received = tk.Label(frame, textvariable = total_bytes_received, bg=bg_colour)
 button_reset = tk.Button(frame, text="reset", command=set_up)
 
@@ -152,8 +153,8 @@ label_chan_B_label.grid(row=2, column=1, padx=5, pady=5)
 label_chan_D_balance.grid(row=3, column=0, padx=5, pady=5)
 label_chan_D_label.grid(row=3, column=1, padx=5, pady=5)
 label_status.grid(row=0, column=0, columnspan=3, padx=5, pady=5)
-label_bytes_received_label.grid(row=4, column=3, padx=5, pady=5)
-label_bytes_received.grid(row=4, column=4, padx=5, pady=5)
+label_bytes_received_label.grid(row=5, column=3, padx=5, pady=5)
+label_bytes_received.grid(row=5, column=4, padx=5, pady=5)
 button_reset.grid(row=0, column=4, padx=5, pady=5)
 
 def sock_checker(node_address):
@@ -165,30 +166,51 @@ def sock_checker(node_address):
 
     while True:
 
-        # receive header
-        received_header = prev_hop.receive()
-        decrypted_header = json.loads(decrypt(received_header, sym_key_prev_hop.sec()).decode())
-        source = get_peer(peers, decrypted_header['source'])
-        commitment_tx = Tx.parse(BytesIO(bytes.fromhex(decrypted_header['commitment_tx'])))
-        secret_hash = check_htlc_and_get_secret_hash(node, commitment_tx, current_channel)
+        received_header = json.loads((prev_hop.receive()).decode())
+        source = get_peer(peers, received_header['source'])
+        commitment_tx = Tx.parse(BytesIO(bytes.fromhex(received_header['commitment_tx'])))
+        H = check_htlc_and_get_secret_hash(node, commitment_tx, current_channel)
+        num_packets = received_header['num_packets']
+        packet_size = received_header['packet_size']
+        num_kilobytes = int(num_packets*packet_size/1000)
+
         prev_hop.send(b'header ACK')
 
         #receive body
         sym_key_source = source.sym_key
-        encrypted_body = prev_hop.receive()
-        decrypted_message = json.loads(decrypt(encrypted_body, sym_key_source.sec()).decode())
-        revealed_secret = decrypted_message['secret']
-        #cost_paid = route_cost(decrypted_header['route'], len(encrypted_body))
+
+        packet_payloads = []
+        
+        for i in range(num_packets):
+          packet_payloads.append(prev_hop.receive())
+          prev_hop.send(b'packet ACK')
+
+          
+        #decode packets 
+        decoded_packets = []
+        for i in range(len(packet_payloads)):
+          decoded_packets.append(json.loads(decrypt(packet_payloads[i], sym_key_source.sec()).decode())) 
+
+
+        #get the shares
+        if(num_packets==1):
+          revealed_secret = int(decoded_packets[0]['secret_share'])
+        else:
+          shares = []
+          for i in range(len(decoded_packets)):
+            shamir_share = decoded_packets[i]['secret_share']
+            x, y = map(int, shamir_share.strip('()').split(','))
+            shares.append((x,y))
+
+          revealed_secret = shamir.recover_secret(shares)
+
 
         #check that you can suceesfully unlock the htlc output
-        if(not (secret_hash == None) and (sha256(str.encode(revealed_secret)) == secret_hash)):
+        if(not (H == None) and (sha256(str.encode(str(revealed_secret))) == H)):
             print("I can sign the htlc output with the secret")
 
             #sign the commitment tx
-            z = commitment_tx.sig_hash(0)
-            signature = node.private_key.sign(z).der() + SIGHASH_ALL.to_bytes(1, 'big')
-            script_sig = commitment_tx.tx_ins[0].script_sig + Script([signature])
-            commitment_tx.tx_ins[0].script_sig = script_sig
+            commitment_tx.tx_ins[0].script_sig = get_script_sig(commitment_tx, node.private_key)
 
             reply = {"commitment_tx": str(commitment_tx.serialize().hex()), "secret": revealed_secret}
 
@@ -197,7 +219,7 @@ def sock_checker(node_address):
             current_channel.paid(commitment_tx.tx_outs[2].amount)
             print(current_channel)
 
-            total_bytes_received_main += (len(encrypted_body) - 51)
+            total_bytes_received_main += num_kilobytes
             total_bytes_received.set(total_bytes_received_main)
 
             wallet_balance = get_total_channel_balance(channels)

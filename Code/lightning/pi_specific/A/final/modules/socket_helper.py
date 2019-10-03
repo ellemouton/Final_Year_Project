@@ -7,14 +7,14 @@ class SocketServer:
   def __init__(self,host,port):
     self.host = host
     self.port = port
-    
+
     try:
       self.sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
       self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     except socket.error as msg:
       print("Socket Error : %s" % msg)
-    
+
     try:
       self.sock.bind((self.host,self.port))
     except socket.error as msg:
@@ -29,13 +29,13 @@ class SocketServer:
 
     if self.addr:
       print('Got connection from',self.host)
-      
+
   def send(self,data):
     #print('Sending data of size ',len(data))
     self.conn.send(data)
     #print('Data sent!!')
 
-  def receive(self,size=1024):
+  def receive(self,size=10000000):
     #print('Receiving data...')
     return self.conn.recv(size)
 
@@ -72,7 +72,7 @@ class SocketClient:
     self.sock.send(data)
     #print('Data sent!!')
 
-  def receive(self,size=1024):
+  def receive(self,size=10000000):
     #print('Receiving data...')
     return self.sock.recv(size)
 

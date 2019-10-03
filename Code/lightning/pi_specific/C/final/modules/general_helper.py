@@ -7,6 +7,7 @@ import sys
 from tx import Tx, TxIn, TxOut
 from io import BytesIO
 from script import Script, p2pkh_script
+import time
 
 class BTC_node:
   def __init__(self, passphrase):
@@ -25,8 +26,8 @@ class Peer:
   def send(self,data):
       self.socket.send(data)
 
-  def receive(self,size=1024):
-      return self.socket.receive(size)
+  def receive(self):
+      return self.socket.receive()
 
   def __str__(self):
     return str(self.socket)+", peer btc address: "+str(self.btc_addr)
@@ -148,6 +149,13 @@ def listen_for_channel_request(peer):
     print("Invalid Channel Request")
     return None
 
+def get_script_sig(transaction, private_key):
+  z = transaction.sig_hash(0)
+  signature = private_key.sign(z).der() + SIGHASH_ALL.to_bytes(1, 'big')
+  script_sig = transaction.tx_ins[0].script_sig + Script([signature])
+  return script_sig
+
+
 def find_cheapest_route(routes):
   costs = []
 
@@ -219,10 +227,7 @@ def new_commitment_tx(node, current_channel, cost, secret_hash):
   commitment_tx = Tx(1, [tx_in], [tx_out_1, tx_out_2, tx_out_3], 0, True)
 
   #sign it
-  z = commitment_tx.sig_hash(0)
-  signature = node.private_key.sign(z).der() + SIGHASH_ALL.to_bytes(1, 'big')
-  script_sig = Script([0x0, signature])
-  commitment_tx.tx_ins[0].script_sig = script_sig
+  commitment_tx.tx_ins[0].script_sig = get_script_sig(commitment_tx, node.private_key)
 
   return commitment_tx
 

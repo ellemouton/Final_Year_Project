@@ -1,6 +1,5 @@
 from io import BytesIO
 import sys
-#from bitcoin.rpc import RawProxy
 from ecc import PrivateKey
 from helper import (
     encode_varint,

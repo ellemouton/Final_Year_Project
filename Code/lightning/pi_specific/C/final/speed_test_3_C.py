@@ -57,6 +57,7 @@ def sock_checker(node_address):
         #receive body
         sym_key_source = source.sym_key
         encrypted_body = prev_hop.receive()
+        #print(encrypted_body)
         decrypted_message = json.loads(decrypt(encrypted_body, sym_key_source.sec()).decode())
         revealed_secret = decrypted_message['secret']
         #cost_paid = route_cost(decrypted_header['route'], len(encrypted_body))

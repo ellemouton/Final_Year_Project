@@ -38,7 +38,6 @@ else:
   host = '127.0.0.1'
   host_C = '127.0.0.1'
 
-host = '127.0.0.1'
 port = 4000
 node_price = 5
 

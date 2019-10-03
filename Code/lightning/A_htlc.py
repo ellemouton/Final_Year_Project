@@ -8,7 +8,7 @@ global system
 
 if(platform.platform()[0:3]=="Lin"):
   system = 0 #RPi
-  sys.path.insert(0, '/home/pi/Documents/modules')
+  sys.path.insert(0, '/home/pi/Documents/final/modules')
 else:
   system = 1 #Mac
   sys.path.insert(0, '/Users/ellemouton/Documents/2019/Sem2/EEE4022S/Code/lightning/modules')
