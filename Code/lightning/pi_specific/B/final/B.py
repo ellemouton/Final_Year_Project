@@ -140,7 +140,7 @@ total_bytes_routed.set(0)
 # Create widgets
 button_up = tk.Button(frame, text="Up", command=increase)
 label_size = tk.Label(frame, textvariable = price, bg=bg_colour)
-label_unit_packet = tk.Label(frame, text="sat/kB", bg=bg_colour)
+label_unit_packet = tk.Label(frame, text="sat/byte", bg=bg_colour)
 button_down = tk.Button(frame, text="Down", command=decrease)
 button_evil= tk.Button(frame, text="Malicious", command=malicious)
 label_wallet_balance_label = tk.Label(frame, text="Total Wallet Balance:", font=('Helvetica', 13, 'bold', 'italic'), bg=bg_colour)
@@ -150,7 +150,7 @@ label_chan_B_label = tk.Label(frame, textvariable = channel_A_local, bg=bg_colou
 label_chan_D_balance = tk.Label(frame, text="Channel B-C Local:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_chan_D_label = tk.Label(frame, textvariable = channel_C_local, bg=bg_colour)
 label_status = tk.Label(frame, text="Node B: Relay", font=('Symbol', 20, 'bold'), bg=bg_colour)
-label_bytes_routed_label = tk.Label(frame, text="Total kB routed:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_bytes_routed_label = tk.Label(frame, text="Total bytes routed:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_bytes_routed = tk.Label(frame, textvariable = total_bytes_routed, bg=bg_colour)
 button_reset = tk.Button(frame, text="reset", command=set_up)
 
@@ -259,7 +259,8 @@ def routing():
         H = check_htlc_and_get_secret_hash(node, commitment_tx_prev_hop, prev_hop_channel)
         num_packets = received_header['num_packets']
         packet_size = received_header['packet_size']
-        num_kilobytes = int(num_packets*packet_size/1000)
+        num_bytes = num_packets*packet_size
+        #num_kilobytes = int(num_packets*packet_size/1000)
 
         #receive packets
         
@@ -271,12 +272,12 @@ def routing():
           packet_payloads.append(prev_hop.receive())
           prev_hop.send(b'packet ACK')
           
-        cost_paid = int(route_cost(received_header['route'], num_kilobytes))
+        cost_paid = int(route_cost(received_header['route'], num_bytes))
         
         #adapt header for next hop
         header = received_header
         header['route'] = received_header['route'][1:]
-        cost_to_pay = int(route_cost(header['route'], num_kilobytes))
+        cost_to_pay = int(route_cost(header['route'], num_bytes))
 
         next_hop = get_peer(peers, header['route'][0][0])
         next_hop_channel = get_channel(next_hop, channels)
@@ -315,7 +316,7 @@ def routing():
               print(c)
 
 
-            total_bytes_routed_main += num_kilobytes
+            total_bytes_routed_main += num_bytes
             total_bytes_routed.set(total_bytes_routed_main)
 
             wallet_balance = get_total_channel_balance(channels)

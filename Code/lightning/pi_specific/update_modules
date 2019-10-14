@@ -1,6 +1,0 @@
-#!/bin/bash
-
-cp -r ../modules A/final
-cp -r ../modules B/final
-cp -r ../modules C/final
-cp -r ../modules D/final

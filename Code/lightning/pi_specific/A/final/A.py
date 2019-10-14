@@ -90,46 +90,44 @@ def increase_bytes():
     global packet_size_main
     global go
 
-    go = True
-
-    val = packet_size.get()+1
+    val = packet_size.get()+10
 
     packet_size.set(val)
     packet_size_main = val
+    go = True
 
 
 def decrease_bytes():
     global packet_size_main
     global go
 
-    go = True
-
-    val = packet_size.get()-1
+    val = packet_size.get()-10
 
     if(val <= 0):
         val = 0
 
     packet_size_main = val
     packet_size.set(val)
+    go = True
 
 
 def increase_packet_num():
     global num_packets_main
     global go
 
-    go = True
 
     val = num_packets.get()+1
 
     num_packets.set(val)
     num_packets_main = val
 
+    go = True
+
 
 def decrease_packet_num():
     global num_packets_main
     global go
 
-    go = True
 
     val = num_packets.get()-1
 
@@ -138,6 +136,7 @@ def decrease_packet_num():
 
     num_packets_main= val
     num_packets.set(val)
+    go = True
 
 # Create the main window
 root = tk.Tk()
@@ -175,7 +174,7 @@ button_down_packets = tk.Button(frame, text="Down", command=decrease_packet_num)
 label_num_packets = tk.Label(frame, textvariable=num_packets, bg=bg_colour)
 label_packet_size = tk.Label(frame, textvariable=packet_size, bg=bg_colour)
 label_x = tk.Label(frame, text="X", bg=bg_colour)
-label_kB = tk.Label(frame, text="kB", bg=bg_colour)
+label_kB = tk.Label(frame, text="bytes", bg=bg_colour)
 button_up_bytes = tk.Button(frame, text="Up", command=increase_bytes)
 button_down_bytes = tk.Button(frame, text="Down", command=decrease_bytes)
 label_wallet_balance_label = tk.Label(frame, text="Total Balance:", font=('Helvetica', 13, 'bold', 'italic'), bg=bg_colour)
@@ -185,7 +184,7 @@ label_chan_B_label = tk.Label(frame, textvariable = channel_B_local, bg=bg_colou
 label_chan_D_balance = tk.Label(frame, text="Channel A-D:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_chan_D_label = tk.Label(frame, textvariable = channel_D_local, bg=bg_colour)
 label_status = tk.Label(frame, text="Node A: Client", font=('Symbol', 20, 'bold'), bg=bg_colour)
-label_bytes_sent_label = tk.Label(frame, text="Total kB sent:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_bytes_sent_label = tk.Label(frame, text="Total bytes sent:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_bytes_sent = tk.Label(frame, textvariable = total_bytes_sent, bg=bg_colour)
 button_reset = tk.Button(frame, text="reset", command=set_up)
 
@@ -216,11 +215,11 @@ print("Node Bitcoin Address: "+str(node.address))
 reset_variables()
 
 #Get A's wallet transaction
-input_tx_id_1 = 'd4f37353c4412c97aca0421958dfbfeffc2e0759dea5e66042b878d113c9d6bc'
-input_tx_index_1 = 1
+input_tx_id_1 = '15fccae87a15395af0232ba7e1a5659a6d3ca67c90ebdf900025753fb6a57f3e'
+input_tx_index_1 = 0
 
-input_tx_id_2 = '15fccae87a15395af0232ba7e1a5659a6d3ca67c90ebdf900025753fb6a57f3e'
-input_tx_index_2 = 0
+input_tx_id_2 = 'd4f37353c4412c97aca0421958dfbfeffc2e0759dea5e66042b878d113c9d6bc'
+input_tx_index_2 = 1
 
 #Automatically connect to peers C and B and D
 if(system==0):
@@ -242,6 +241,8 @@ for p in peers:
 #Automatically connect channel with B and D
 channels.append(add_channel(node, peers[1], input_tx_id_1, input_tx_index_1))
 channels.append(add_channel(node, peers[2], input_tx_id_2, input_tx_index_2))
+
+#print(channels[0].funding_tx.serialize().hex())
 
 for c in channels:
   print(c)
@@ -273,12 +274,14 @@ def send_packets():
 
   while True:
 
-    packet_size_freeze = packet_size_main*1000 #convert from kB to B
-    num_packets_freeze = num_packets_main
-    num_bytes = packet_size_freeze*num_packets_freeze
-    num_kilobytes = int(num_bytes/1000)
+    #packet_size_freeze = packet_size_main*1000 #convert from kB to B
 
-    if(packet_size_freeze>0 and num_packets_freeze>0):# and go==True):
+    #num_kilobytes = int(num_bytes/1000)
+
+    if(packet_size_main>0 and num_packets_main>0 and go==True):
+      packet_size_freeze = packet_size_main
+      num_packets_freeze = num_packets_main
+      num_bytes = packet_size_freeze*num_packets_freeze
 
       # find routes
       routes = [[['mfwnjj1Jbd1uwXbj5Q4FUjmkEcGqQQsYDn', prices['mfwnjj1Jbd1uwXbj5Q4FUjmkEcGqQQsYDn']], ['n1weDdde5xXLfPeutESLaG8swr5jLCqz72', prices['n1weDdde5xXLfPeutESLaG8swr5jLCqz72']]],
@@ -316,8 +319,9 @@ def send_packets():
         next_hop = get_peer(peers, routes[cheap_route_index][0][0])
         next_hop_channel = get_channel(next_hop, channels)
 
-        cost = route_cost(cheapest_route, num_kilobytes)
+        cost = route_cost(cheapest_route, num_bytes)
         commitment_tx = new_commitment_tx(node, next_hop_channel, cost, H)
+        #print(commitment_tx.serialize().hex())
         header = {"source":node.address, "route": cheapest_route, "num_packets":num_packets_freeze, "packet_size": packet_size_freeze, "commitment_tx": str(commitment_tx.serialize().hex())}
 
         # send header
@@ -343,7 +347,7 @@ def send_packets():
           print(get_channel(next_hop, channels))
 
 
-          total_bytes_sent_main += num_kilobytes
+          total_bytes_sent_main += num_bytes
           total_bytes_sent.set(total_bytes_sent_main)
 
           wallet_balance = get_total_channel_balance(channels)

@@ -127,7 +127,7 @@ total_bytes_received.set(0)
 # Create widgets
 button_up = tk.Button(frame, text="Up", command=increase)
 label_size = tk.Label(frame, textvariable = price, bg=bg_colour)
-label_unit_packet = tk.Label(frame, text="sat/kB", bg=bg_colour)
+label_unit_packet = tk.Label(frame, text="sat/byte", bg=bg_colour)
 button_down = tk.Button(frame, text="Down", command=decrease)
 label_wallet_balance_label = tk.Label(frame, text="Total Wallet Balance:", font=('Helvetica', 13, 'bold', 'italic'), bg=bg_colour)
 label_wallet_balance = tk.Label(frame, textvariable = totalBalance, bg=bg_colour)
@@ -136,7 +136,7 @@ label_chan_B_label = tk.Label(frame, textvariable = channel_B_local, bg=bg_colou
 label_chan_D_balance = tk.Label(frame, text="Channel D-C Local:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_chan_D_label = tk.Label(frame, textvariable = channel_D_local, bg=bg_colour)
 label_status = tk.Label(frame, text="Node C: Gateway", font=('Symbol', 20, 'bold'), bg=bg_colour)
-label_bytes_received_label = tk.Label(frame, text="Total kB received:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
+label_bytes_received_label = tk.Label(frame, text="Total bytes received:", font=('Helvetica', 13, 'bold'), bg=bg_colour)
 label_bytes_received = tk.Label(frame, textvariable = total_bytes_received, bg=bg_colour)
 button_reset = tk.Button(frame, text="reset", command=set_up)
 
@@ -152,7 +152,7 @@ label_chan_B_balance.grid(row=2, column=0, padx=5, pady=5)
 label_chan_B_label.grid(row=2, column=1, padx=5, pady=5)
 label_chan_D_balance.grid(row=3, column=0, padx=5, pady=5)
 label_chan_D_label.grid(row=3, column=1, padx=5, pady=5)
-label_status.grid(row=0, column=0, columnspan=3, padx=5, pady=5)
+label_status.grid(row=0, column=0, columnspan=4, padx=5, pady=5)
 label_bytes_received_label.grid(row=5, column=3, padx=5, pady=5)
 label_bytes_received.grid(row=5, column=4, padx=5, pady=5)
 button_reset.grid(row=0, column=4, padx=5, pady=5)
@@ -172,7 +172,8 @@ def sock_checker(node_address):
         H = check_htlc_and_get_secret_hash(node, commitment_tx, current_channel)
         num_packets = received_header['num_packets']
         packet_size = received_header['packet_size']
-        num_kilobytes = int(num_packets*packet_size/1000)
+        num_bytes = num_packets*packet_size
+        #num_kilobytes = int(num_packets*packet_size/1000)
 
         prev_hop.send(b'header ACK')
 
@@ -219,7 +220,7 @@ def sock_checker(node_address):
             current_channel.paid(commitment_tx.tx_outs[2].amount)
             print(current_channel)
 
-            total_bytes_received_main += num_kilobytes
+            total_bytes_received_main += num_bytes
             total_bytes_received.set(total_bytes_received_main)
 
             wallet_balance = get_total_channel_balance(channels)
